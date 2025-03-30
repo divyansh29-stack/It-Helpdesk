@@ -421,7 +421,25 @@
                         <h6 class="text-muted mb-3">Complaint Information</h6>
                         <p><strong>Complaint No:</strong> <span id="complaintNo"></span></p>
                         <p><strong>Status:</strong> <span id="complaintStatus"></span></p>
-                        <p><strong>Priority:</strong> <span id="complaintPriority"></span></p>
+                        <p>
+                            <strong>Priority:</strong> 
+                            <span id="complaintPriority"></span>
+                            <button class="btn btn-sm btn-outline-secondary ms-2" id="changePriorityBtn" title="Change Priority">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </p>
+                        <div class="change-priority-container d-none mb-3">
+                            <div class="input-group input-group-sm">
+                                <select class="form-select form-select-sm" id="prioritySelect">
+                                    <option value="Low">Low</option>
+                                    <option value="Medium">Medium</option>
+                                    <option value="High">High</option>
+                                </select>
+                                <button class="btn btn-primary" type="button" id="updatePriorityBtn">Update</button>
+                                <button class="btn btn-secondary" type="button" id="cancelPriorityBtn">Cancel</button>
+                            </div>
+                            <small class="text-muted">Set high priority for urgent issues that need immediate attention</small>
+                        </div>
                         <p><strong>Created At:</strong> <span id="complaintCreatedAt"></span></p>
                         <p><strong>Assigned To:</strong> <span id="complaintAssignedTo"></span></p>
                     </div>
@@ -597,6 +615,38 @@ function updateComplaintStatus(complaintId, newStatus) {
     .catch(error => console.error('Error:', error));
 }
 
+// Function to update complaint priority
+function updateComplaintPriority(complaintId, newPriority) {
+    fetch(`/complaint/${complaintId}/update_priority`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ priority: newPriority })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast('Priority updated successfully');
+            
+            // Update UI without reloading
+            const priorityBadge = document.getElementById('complaintPriority');
+            if (priorityBadge) {
+                priorityBadge.innerHTML = `<span class="badge ${getPriorityBadgeClass(newPriority)}">${newPriority}</span>`;
+            }
+            
+            // Hide the priority change container
+            document.querySelector('.change-priority-container').classList.add('d-none');
+        } else {
+            showToast('Error updating priority: ' + data.error, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('Error updating priority', 'error');
+    });
+}
+
 // Function to update technician assignment
 function updateTechnicianAssignment(complaintId, technicianId) {
     fetch(`/complaint/${complaintId}/assign_technician`, {
@@ -636,10 +686,25 @@ function viewComplaint(complaintId) {
         .then(data => {
             console.log('Received complaint data:', data); // Debug log
             
+            // Store complaint ID for later use with priority update
+            document.getElementById('viewComplaintModal').setAttribute('data-complaint-id', complaintId);
+            
             // Update modal content with fallback values
             document.getElementById('complaintNo').textContent = data.complaint_no || 'N/A';
             document.getElementById('complaintStatus').innerHTML = `<span class="badge ${getStatusBadgeClass(data.status)}">${data.status || 'Unknown'}</span>`;
             document.getElementById('complaintPriority').innerHTML = `<span class="badge ${getPriorityBadgeClass(data.priority)}">${data.priority || 'Unknown'}</span>`;
+            
+            // Set the current priority in the select dropdown
+            const prioritySelect = document.getElementById('prioritySelect');
+            if (prioritySelect) {
+                for (let i = 0; i < prioritySelect.options.length; i++) {
+                    if (prioritySelect.options[i].value === data.priority) {
+                        prioritySelect.selectedIndex = i;
+                        break;
+                    }
+                }
+            }
+            
             document.getElementById('complaintCreatedAt').textContent = data.created_at ? new Date(data.created_at).toLocaleString() : 'N/A';
             document.getElementById('complaintAssignedTo').textContent = data.technician ? data.technician.username : 'Unassigned';
             document.getElementById('employeeName').textContent = data.employee_name || 'N/A';
@@ -663,6 +728,42 @@ function viewComplaint(complaintId) {
                 `).join('') : 
                 'No comments yet';
             document.getElementById('complaintComments').innerHTML = commentsHtml;
+            
+            // Set up priority change button handlers
+            const changePriorityBtn = document.getElementById('changePriorityBtn');
+            const priorityContainer = document.querySelector('.change-priority-container');
+            const updatePriorityBtn = document.getElementById('updatePriorityBtn');
+            const cancelPriorityBtn = document.getElementById('cancelPriorityBtn');
+            
+            if (changePriorityBtn && priorityContainer && updatePriorityBtn && cancelPriorityBtn) {
+                // Remove any existing event listeners (to prevent duplicates)
+                const newChangePriorityBtn = changePriorityBtn.cloneNode(true);
+                changePriorityBtn.parentNode.replaceChild(newChangePriorityBtn, changePriorityBtn);
+                
+                const newUpdatePriorityBtn = updatePriorityBtn.cloneNode(true);
+                updatePriorityBtn.parentNode.replaceChild(newUpdatePriorityBtn, updatePriorityBtn);
+                
+                const newCancelPriorityBtn = cancelPriorityBtn.cloneNode(true);
+                cancelPriorityBtn.parentNode.replaceChild(newCancelPriorityBtn, cancelPriorityBtn);
+                
+                // Show/hide priority change controls
+                newChangePriorityBtn.addEventListener('click', function() {
+                    priorityContainer.classList.remove('d-none');
+                    newChangePriorityBtn.classList.add('d-none');
+                });
+                
+                // Cancel priority change
+                newCancelPriorityBtn.addEventListener('click', function() {
+                    priorityContainer.classList.add('d-none');
+                    newChangePriorityBtn.classList.remove('d-none');
+                });
+                
+                // Update priority
+                newUpdatePriorityBtn.addEventListener('click', function() {
+                    const newPriority = document.getElementById('prioritySelect').value;
+                    updateComplaintPriority(complaintId, newPriority);
+                });
+            }
             
             // Show the modal
             const modal = new bootstrap.Modal(document.getElementById('viewComplaintModal'));

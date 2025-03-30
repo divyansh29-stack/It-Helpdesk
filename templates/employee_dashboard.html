@@ -1,0 +1,1121 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="dashboard-container">
+    <!-- Header Section -->
+    <div class="dashboard-header">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h2 class="welcome-text">Welcome, <span class="username">{{ current_user.username }}</span></h2>
+                    <p class="dashboard-subtitle">Track and manage your IT support requests</p>
+                </div>
+                <div class="col-md-4 text-md-end">
+                    <a href="{{ url_for('chat_page') }}" class="btn btn-primary btn-lg support-btn">
+                        <i class="fas fa-headset me-2"></i>Get IT Support
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="dashboard-content">
+        <div class="container">
+            <!-- Statistics Cards -->
+            <div class="row stats-row">
+                <div class="col-lg-3 col-md-6">
+                    <div class="stat-card total-card animate-fadeInUp" style="opacity: 0;">
+                        <div class="stat-icon">
+                            <i class="fas fa-ticket-alt"></i>
+                        </div>
+                        <div class="stat-details">
+                            <h3 class="stat-value">{{ complaints|length }}</h3>
+                            <p class="stat-label">Total Tickets</p>
+                        </div>
+                        <div class="stat-chart">
+                            <div class="progress-ring">
+                                <div class="inner-circle"></div>
+                                <div class="percentage">100%</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-3 col-md-6">
+                    <div class="stat-card open-card animate-fadeInUp" style="opacity: 0; animation-delay: 0.1s;">
+                        <div class="stat-icon">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="stat-details">
+                            <h3 class="stat-value">{{ complaints|selectattr('status', 'equalto', 'Open')|list|length }}</h3>
+                            <p class="stat-label">Open Tickets</p>
+                        </div>
+                        <div class="stat-chart">
+                            <div class="progress-ring open-ring">
+                                <div class="inner-circle"></div>
+                                <div class="percentage">{{ (complaints|selectattr('status', 'equalto', 'Open')|list|length / complaints|length * 100)|round|int if complaints|length > 0 else 0 }}%</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-3 col-md-6">
+                    <div class="stat-card progress-card animate-fadeInUp" style="opacity: 0; animation-delay: 0.2s;">
+                        <div class="stat-icon">
+                            <i class="fas fa-spinner"></i>
+                        </div>
+                        <div class="stat-details">
+                            <h3 class="stat-value">{{ complaints|selectattr('status', 'equalto', 'In Progress')|list|length }}</h3>
+                            <p class="stat-label">In Progress</p>
+                        </div>
+                        <div class="stat-chart">
+                            <div class="progress-ring progress-ring">
+                                <div class="inner-circle"></div>
+                                <div class="percentage">{{ (complaints|selectattr('status', 'equalto', 'In Progress')|list|length / complaints|length * 100)|round|int if complaints|length > 0 else 0 }}%</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-3 col-md-6">
+                    <div class="stat-card resolved-card animate-fadeInUp" style="opacity: 0; animation-delay: 0.3s;">
+                        <div class="stat-icon">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="stat-details">
+                            <h3 class="stat-value">{{ complaints|selectattr('status', 'equalto', 'Resolved')|list|length }}</h3>
+                            <p class="stat-label">Resolved</p>
+                        </div>
+                        <div class="stat-chart">
+                            <div class="progress-ring resolved-ring">
+                                <div class="inner-circle"></div>
+                                <div class="percentage">{{ (complaints|selectattr('status', 'equalto', 'Resolved')|list|length / complaints|length * 100)|round|int if complaints|length > 0 else 0 }}%</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Support Action Card -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card support-action-card">
+                        <div class="card-body d-flex flex-column flex-md-row align-items-center justify-content-between p-4">
+                            <div class="text-center text-md-start mb-3 mb-md-0">
+                                <h4 class="mb-2"><i class="fas fa-robot me-2"></i>Need IT Support?</h4>
+                                <p class="mb-0 text-muted">All IT support tickets must be created through our intelligent Assistant</p>
+                            </div>
+                            <a href="{{ url_for('chat_page') }}" class="btn btn-primary btn-lg px-4 py-2">
+                                <i class="fas fa-headset me-2"></i> Talk to IT Support Assistant
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Complaints Table -->
+            <div class="card complaints-table-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-list-alt me-2"></i>
+                        <h5 class="mb-0">My Support Tickets</h5>
+                    </div>
+                    <div class="search-container">
+                        <div class="input-group">
+                            <span class="input-group-text search-icon">
+                                <i class="fas fa-search"></i>
+                            </span>
+                            <input type="text" class="form-control search-input" id="searchInput" placeholder="Search tickets...">
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table ticket-table" id="complaintsTable">
+                            <thead>
+                                <tr>
+                                    <th>Ticket No</th>
+                                    <th>Issue</th>
+                                    <th>Status</th>
+                                    <th>Priority</th>
+                                    <th>Assigned To</th>
+                                    <th>Created At</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for complaint in complaints %}
+                                <tr>
+                                    <td>
+                                        <span class="ticket-number">
+                                            {{ complaint.complaint_no }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <i class="fas fa-exclamation-circle issue-icon me-2"></i>
+                                            <span class="ticket-issue">{{ complaint.issue[:60] }}{% if complaint.issue|length > 60 %}...{% endif %}</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if complaint.status == 'Open' %}
+                                            <span class="status-badge status-open">
+                                                <i class="fas fa-clock me-1"></i>Open
+                                            </span>
+                                        {% elif complaint.status == 'In Progress' %}
+                                            <span class="status-badge status-progress">
+                                                <i class="fas fa-spinner me-1"></i>In Progress
+                                            </span>
+                                        {% elif complaint.status == 'Resolved' %}
+                                            <span class="status-badge status-resolved">
+                                                <i class="fas fa-check-circle me-1"></i>Resolved
+                                            </span>
+                                        {% else %}
+                                            <span class="status-badge status-escalated">
+                                                <i class="fas fa-exclamation-triangle me-1"></i>Escalated
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if complaint.priority == 'High' %}
+                                            <span class="priority-badge priority-high">
+                                                <i class="fas fa-arrow-up me-1"></i>High
+                                            </span>
+                                        {% elif complaint.priority == 'Medium' %}
+                                            <span class="priority-badge priority-medium">
+                                                <i class="fas fa-minus me-1"></i>Medium
+                                            </span>
+                                        {% else %}
+                                            <span class="priority-badge priority-low">
+                                                <i class="fas fa-arrow-down me-1"></i>Low
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="technician-info">
+                                            <i class="fas fa-user-tie tech-icon me-2"></i>
+                                            {{ complaint.technician.username if complaint.technician else 'Unassigned' }}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="created-info">
+                                            <i class="fas fa-calendar-alt date-icon me-2"></i>
+                                            {{ complaint.created_at.strftime('%Y-%m-%d %H:%M') }}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-view" onclick="viewComplaint({{ complaint.id }})">
+                                            <i class="fas fa-eye me-1"></i>View
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="7" class="text-center py-5">
+                                        <div class="empty-state">
+                                            <i class="fas fa-ticket-alt empty-icon"></i>
+                                            <h5>No Tickets Found</h5>
+                                            <p>You haven't created any support tickets yet</p>
+                                            <a href="{{ url_for('chat_page') }}" class="btn btn-primary mt-2">
+                                                <i class="fas fa-headset me-2"></i>Talk to IT Support Assistant
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Complaint Details Modal -->
+<div class="modal fade" id="complaintModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="d-flex align-items-center">
+                    <div class="modal-icon">
+                        <i class="fas fa-ticket-alt"></i>
+                    </div>
+                    <h5 class="modal-title ms-2">Ticket Details</h5>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="ticket-status-banner" id="statusBanner">
+                    <!-- Will be filled by JavaScript -->
+                </div>
+                
+                <div class="row ticket-details-section">
+                    <div class="col-md-6">
+                        <div class="info-card">
+                            <h6 class="info-title">
+                                <i class="fas fa-info-circle me-2"></i>Ticket Information
+                            </h6>
+                            <div class="info-item">
+                                <span class="info-label">Ticket No:</span>
+                                <span class="info-value" id="complaintNo"></span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Status:</span>
+                                <span class="info-value" id="complaintStatus"></span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Priority:</span>
+                                <span class="info-value" id="complaintPriority"></span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Created At:</span>
+                                <span class="info-value" id="complaintCreatedAt"></span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Assigned To:</span>
+                                <span class="info-value" id="complaintAssignedTo"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="info-card">
+                            <h6 class="info-title">
+                                <i class="fas fa-user me-2"></i>Employee Details
+                            </h6>
+                            <div class="info-item">
+                                <span class="info-label">Name:</span>
+                                <span class="info-value" id="employeeName"></span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Designation:</span>
+                                <span class="info-value" id="employeeDesignation"></span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Department:</span>
+                                <span class="info-value" id="employeeDepartment"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="info-card issue-card">
+                    <h6 class="info-title">
+                        <i class="fas fa-exclamation-circle me-2"></i>Issue Description
+                    </h6>
+                    <div class="issue-content" id="complaintIssue"></div>
+                </div>
+                
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="info-card">
+                            <h6 class="info-title">
+                                <i class="fas fa-tools me-2"></i>Troubleshooting Steps
+                            </h6>
+                            <div class="troubleshooting-content" id="troubleshootingSteps">
+                                <!-- Troubleshooting steps will be displayed here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="info-card">
+                            <h6 class="info-title">
+                                <i class="fas fa-comments me-2"></i>Comments
+                            </h6>
+                            <div class="comments-section" id="complaintComments">
+                                <!-- Comments will be displayed here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+/* Dashboard Layout */
+.dashboard-container {
+    min-height: calc(100vh - 70px);
+    background-color: #f8f9fd;
+    padding-bottom: 2rem;
+}
+
+.dashboard-header {
+    background: linear-gradient(135deg, var(--secondary-color), var(--accent-color));
+    color: white;
+    padding: 2.5rem 0 2.5rem;
+    margin-bottom: 2rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.dashboard-header::after {
+    content: '';
+    position: absolute;
+    bottom: -50px;
+    left: 0;
+    width: 100%;
+    height: 100px;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 320'%3E%3Cpath fill='%23f8f9fd' fill-opacity='1' d='M0,224L48,213.3C96,203,192,181,288,176C384,171,480,181,576,186.7C672,192,768,192,864,165.3C960,139,1056,85,1152,80C1248,75,1344,117,1392,138.7L1440,160L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z'%3E%3C/path%3E%3C/svg%3E");
+    background-size: cover;
+}
+
+.welcome-text {
+    font-size: 2.25rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.username {
+    color: rgba(255, 255, 255, 0.9);
+    position: relative;
+}
+
+.username::after {
+    content: '';
+    position: absolute;
+    bottom: -4px;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background-color: rgba(255, 255, 255, 0.5);
+}
+
+.dashboard-subtitle {
+    font-size: 1.1rem;
+    opacity: 0.9;
+}
+
+.support-btn {
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    transition: all 0.3s ease;
+    padding: 0.75rem 1.5rem;
+}
+
+.support-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.25);
+}
+
+/* Statistics Cards */
+.stats-row {
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    padding: 1.5rem;
+    position: relative;
+    overflow: hidden;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border: none;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+}
+
+.stat-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    font-size: 1.5rem;
+    margin-right: 1rem;
+}
+
+.total-card .stat-icon {
+    background-color: rgba(67, 97, 238, 0.1);
+    color: var(--secondary-color);
+}
+
+.open-card .stat-icon {
+    background-color: rgba(255, 193, 7, 0.1);
+    color: #ffc107;
+}
+
+.progress-card .stat-icon {
+    background-color: rgba(13, 202, 240, 0.1);
+    color: #0dcaf0;
+}
+
+.resolved-card .stat-icon {
+    background-color: rgba(40, 167, 69, 0.1);
+    color: #28a745;
+}
+
+.stat-details {
+    flex: 1;
+}
+
+.stat-value {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-bottom: 0;
+    line-height: 1.1;
+}
+
+.stat-label {
+    color: var(--light-text);
+    margin-bottom: 0;
+    font-size: 0.9rem;
+}
+
+.stat-chart {
+    width: 60px;
+    height: 60px;
+    position: relative;
+}
+
+.progress-ring {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: conic-gradient(var(--secondary-color) 0%, rgba(67, 97, 238, 0.1) 0%);
+    position: relative;
+}
+
+.open-ring {
+    background: conic-gradient(#ffc107 0%, rgba(255, 193, 7, 0.1) 0%);
+}
+
+.progress-ring {
+    background: conic-gradient(#0dcaf0 0%, rgba(13, 202, 240, 0.1) 0%);
+}
+
+.resolved-ring {
+    background: conic-gradient(#28a745 0%, rgba(40, 167, 69, 0.1) 0%);
+}
+
+.inner-circle {
+    width: 45px;
+    height: 45px;
+    background: white;
+    border-radius: 50%;
+    position: absolute;
+}
+
+.percentage {
+    position: relative;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--dark-text);
+}
+
+/* Cards */
+.card {
+    border: none;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    overflow: hidden;
+    transition: var(--transition);
+    margin-bottom: 1.5rem;
+}
+
+.card:hover {
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+.card-header {
+    background-color: white;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    padding: 1.25rem 1.5rem;
+}
+
+.complaints-table-card .card-header h5 {
+    font-weight: 600;
+    color: var(--dark-text);
+}
+
+.search-container {
+    width: 300px;
+}
+
+.search-icon {
+    background-color: transparent;
+    border-right: none;
+    color: var(--light-text);
+}
+
+.search-input {
+    border-left: none;
+    padding-left: 0;
+}
+
+.search-input:focus {
+    box-shadow: none;
+    border-color: #ced4da;
+}
+
+/* Table Styling */
+.ticket-table {
+    margin-bottom: 0;
+}
+
+.ticket-table thead th {
+    background-color: #f8f9fd;
+    color: var(--light-text);
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    border-top: none;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    padding: 0.75rem 1.25rem;
+}
+
+.ticket-table tbody tr {
+    transition: all 0.2s ease;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.ticket-table tbody tr:hover {
+    background-color: rgba(67, 97, 238, 0.03);
+}
+
+.ticket-table td {
+    padding: 1rem 1.25rem;
+    vertical-align: middle;
+}
+
+.ticket-number {
+    font-family: monospace;
+    font-weight: 600;
+    color: var(--dark-text);
+    padding: 0.3rem 0.6rem;
+    background-color: #f8f9fd;
+    border-radius: 4px;
+    font-size: 0.85rem;
+}
+
+.issue-icon {
+    color: #ffc107;
+}
+
+.ticket-issue {
+    font-weight: 500;
+    color: var(--dark-text);
+}
+
+.status-badge, .priority-badge {
+    padding: 0.4rem 0.8rem;
+    border-radius: 100px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+}
+
+.status-open {
+    background-color: rgba(255, 193, 7, 0.1);
+    color: #ffc107;
+}
+
+.status-progress {
+    background-color: rgba(13, 202, 240, 0.1);
+    color: #0dcaf0;
+}
+
+.status-resolved {
+    background-color: rgba(40, 167, 69, 0.1);
+    color: #28a745;
+}
+
+.status-escalated {
+    background-color: rgba(220, 53, 69, 0.1);
+    color: #dc3545;
+}
+
+.priority-high {
+    background-color: rgba(220, 53, 69, 0.1);
+    color: #dc3545;
+}
+
+.priority-medium {
+    background-color: rgba(255, 193, 7, 0.1);
+    color: #ffc107;
+}
+
+.priority-low {
+    background-color: rgba(40, 167, 69, 0.1);
+    color: #28a745;
+}
+
+.technician-info, .created-info {
+    display: flex;
+    align-items: center;
+}
+
+.tech-icon {
+    color: var(--secondary-color);
+}
+
+.date-icon {
+    color: var(--light-text);
+}
+
+.btn-view {
+    background-color: rgba(67, 97, 238, 0.1);
+    color: var(--secondary-color);
+    border: none;
+    padding: 0.4rem 0.8rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+}
+
+.btn-view:hover {
+    background-color: var(--secondary-color);
+    color: white;
+    transform: translateY(-2px);
+}
+
+.empty-state {
+    padding: 2rem;
+    text-align: center;
+}
+
+.empty-icon {
+    font-size: 3rem;
+    color: var(--light-text);
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.empty-state h5 {
+    font-weight: 600;
+    color: var(--dark-text);
+    margin-bottom: 0.5rem;
+}
+
+.empty-state p {
+    color: var(--light-text);
+    margin-bottom: 1.5rem;
+}
+
+/* Modal Styling */
+.modal-content {
+    border: none;
+    border-radius: var(--border-radius);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+}
+
+.modal-header {
+    background: linear-gradient(135deg, var(--secondary-color), var(--accent-color));
+    color: white;
+    border-bottom: none;
+    padding: 1.25rem 1.5rem;
+}
+
+.modal-icon {
+    width: 40px;
+    height: 40px;
+    background-color: rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+}
+
+.modal-title {
+    font-weight: 600;
+}
+
+.modal-body {
+    padding: 0;
+}
+
+.ticket-status-banner {
+    padding: 1rem 1.5rem;
+    color: white;
+    text-align: center;
+    font-weight: 600;
+}
+
+.banner-open {
+    background-color: #ffc107;
+}
+
+.banner-progress {
+    background-color: #0dcaf0;
+}
+
+.banner-resolved {
+    background-color: #28a745;
+}
+
+.banner-escalated {
+    background-color: #dc3545;
+}
+
+.ticket-details-section {
+    padding: 1.5rem;
+}
+
+.info-card {
+    background-color: #f8f9fd;
+    border-radius: 10px;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+}
+
+.info-title {
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: var(--dark-text);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    padding-bottom: 0.5rem;
+}
+
+.info-item {
+    display: flex;
+    margin-bottom: 0.5rem;
+}
+
+.info-label {
+    font-weight: 600;
+    color: var(--light-text);
+    width: 120px;
+}
+
+.info-value {
+    flex: 1;
+}
+
+.issue-card {
+    margin: 0 1.5rem 1.5rem;
+}
+
+.issue-content {
+    white-space: pre-line;
+}
+
+.troubleshooting-content {
+    white-space: pre-line;
+    padding: 0.5rem;
+    background-color: white;
+    border-radius: 8px;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.comments-section {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.comment {
+    background-color: white;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.comment:last-child {
+    margin-bottom: 0;
+}
+
+.modal-footer {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+/* Animation */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-fadeInUp {
+    animation: fadeInUp 0.6s ease forwards;
+}
+
+@media (max-width: 768px) {
+    .dashboard-header {
+        padding: 1.5rem 0;
+        margin-bottom: 1.5rem;
+    }
+    
+    .welcome-text {
+        font-size: 1.75rem;
+    }
+    
+    .support-btn {
+        margin-top: 1rem;
+        width: 100%;
+    }
+    
+    .search-container {
+        width: 100%;
+        margin-top: 1rem;
+    }
+    
+    .card-header {
+        flex-direction: column;
+        align-items: start !important;
+    }
+    
+    .info-item {
+        flex-direction: column;
+    }
+    
+    .info-label {
+        width: 100%;
+        margin-bottom: 0.25rem;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Activate animations for stat cards
+    const statCards = document.querySelectorAll('.animate-fadeInUp');
+    statCards.forEach(card => {
+        setTimeout(() => {
+            card.style.opacity = '1';
+        }, 100);
+    });
+    
+    // Initialize progress rings
+    const updateProgressRing = (selector, percentage) => {
+        const ring = document.querySelector(selector);
+        if (ring) {
+            ring.style.background = `conic-gradient(currentColor ${percentage}%, rgba(currentColor, 0.1) 0%)`;
+        }
+    };
+    
+    // Get percentages from the page
+    const openRingPercentage = document.querySelector('.open-ring .percentage')?.innerText.replace('%', '') || 0;
+    const progressRingPercentage = document.querySelector('.progress-ring .percentage')?.innerText.replace('%', '') || 0;
+    const resolvedRingPercentage = document.querySelector('.resolved-ring .percentage')?.innerText.replace('%', '') || 0;
+    
+    // Update rings
+    updateProgressRing('.open-ring', openRingPercentage);
+    updateProgressRing('.progress-ring', progressRingPercentage);
+    updateProgressRing('.resolved-ring', resolvedRingPercentage);
+});
+
+function viewComplaint(complaintId) {
+    console.log('Fetching complaint details for ID:', complaintId);
+    
+    fetch(`/complaint/${complaintId}`)
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(data => {
+                    throw new Error(data.error || `HTTP error! status: ${response.status}`);
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Received complaint data:', data);
+            
+            // Set the status banner
+            const statusBanner = document.getElementById('statusBanner');
+            const bannerClass = getBannerClass(data.status);
+            statusBanner.className = `ticket-status-banner ${bannerClass}`;
+            statusBanner.innerHTML = `
+                <i class="${getStatusIcon(data.status)} me-2"></i>
+                This ticket is currently <strong>${data.status}</strong>
+            `;
+            
+            // Update modal content with enhanced styling
+            document.getElementById('complaintNo').textContent = data.complaint_no || 'N/A';
+            document.getElementById('complaintStatus').innerHTML = getStatusBadgeHTML(data.status);
+            document.getElementById('complaintPriority').innerHTML = getPriorityBadgeHTML(data.priority);
+            document.getElementById('complaintCreatedAt').textContent = data.created_at 
+                ? new Date(data.created_at).toLocaleString() 
+                : 'N/A';
+            document.getElementById('complaintAssignedTo').textContent = data.technician 
+                ? data.technician.username 
+                : 'Unassigned';
+            document.getElementById('employeeName').textContent = data.employee_name || 'N/A';
+            document.getElementById('employeeDesignation').textContent = data.employee_designation || 'N/A';
+            document.getElementById('employeeDepartment').textContent = data.employee_department || 'N/A';
+            document.getElementById('complaintIssue').textContent = data.issue || 'No issue description available';
+            
+            // Format troubleshooting steps
+            const troubleshootingSteps = data.troubleshooting_steps
+                ? formatTroubleshootingSteps(data.troubleshooting_steps)
+                : '<div class="empty-info">No troubleshooting steps available yet</div>';
+            document.getElementById('troubleshootingSteps').innerHTML = troubleshootingSteps;
+            
+            // Format comments with enhanced styling
+            const commentsHtml = data.comments && data.comments.length > 0
+                ? data.comments.map(comment => `
+                    <div class="comment">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div>
+                                <strong>${comment.user.username}</strong>
+                                <span class="badge ${comment.user.role === 'technician' ? 'bg-info' : 'bg-secondary'} ms-2">
+                                    ${comment.user.role === 'technician' ? 'Support Team' : 'Employee'}
+                                </span>
+                            </div>
+                            <small class="text-muted">${new Date(comment.created_at).toLocaleString()}</small>
+                        </div>
+                        <p class="mb-0">${comment.content}</p>
+                    </div>
+                `).join('')
+                : '<div class="empty-info text-center py-3">No comments yet</div>';
+            document.getElementById('complaintComments').innerHTML = commentsHtml;
+            
+            // Show the modal
+            const modal = new bootstrap.Modal(document.getElementById('complaintModal'));
+            modal.show();
+        })
+        .catch(error => {
+            console.error('Error fetching complaint details:', error);
+            alert(`Error loading complaint details: ${error.message}. Please check the console for more information.`);
+        });
+}
+
+function formatTroubleshootingSteps(steps) {
+    return steps
+        .replace(/\n/g, '<br>')
+        .replace(/(\d+\.)\s(.*?)(?=<br>\d+\.|<br>Common causes:|$)/gs, '<div class="step"><strong>$1</strong> $2</div>')
+        .replace(/(Common causes:)/g, '<br><strong>$1</strong><br>')
+        .replace(/(When to contact IT support:)/g, '<br><strong>$1</strong><br>')
+        .replace(/- (.*?)(?=<br>-|<br><|$)/g, '<div class="bullet-item">$1</div>')
+        .replace(/\*(.*?)\*/g, '<span class="highlight">$1</span>');
+}
+
+function getBannerClass(status) {
+    switch(status) {
+        case 'Open': return 'banner-open';
+        case 'In Progress': return 'banner-progress';
+        case 'Resolved': return 'banner-resolved';
+        default: return 'banner-escalated';
+    }
+}
+
+function getStatusIcon(status) {
+    switch(status) {
+        case 'Open': return 'fas fa-clock';
+        case 'In Progress': return 'fas fa-spinner fa-spin';
+        case 'Resolved': return 'fas fa-check-circle';
+        default: return 'fas fa-exclamation-triangle';
+    }
+}
+
+function getStatusBadgeHTML(status) {
+    let badgeClass = '';
+    let icon = '';
+    
+    switch(status) {
+        case 'Open':
+            badgeClass = 'status-badge status-open';
+            icon = 'fas fa-clock';
+            break;
+        case 'In Progress':
+            badgeClass = 'status-badge status-progress';
+            icon = 'fas fa-spinner';
+            break;
+        case 'Resolved':
+            badgeClass = 'status-badge status-resolved';
+            icon = 'fas fa-check-circle';
+            break;
+        default:
+            badgeClass = 'status-badge status-escalated';
+            icon = 'fas fa-exclamation-triangle';
+    }
+    
+    return `<span class="${badgeClass}"><i class="${icon} me-1"></i>${status || 'Unknown'}</span>`;
+}
+
+function getPriorityBadgeHTML(priority) {
+    let badgeClass = '';
+    let icon = '';
+    
+    switch(priority) {
+        case 'High':
+            badgeClass = 'priority-badge priority-high';
+            icon = 'fas fa-arrow-up';
+            break;
+        case 'Medium':
+            badgeClass = 'priority-badge priority-medium';
+            icon = 'fas fa-minus';
+            break;
+        default:
+            badgeClass = 'priority-badge priority-low';
+            icon = 'fas fa-arrow-down';
+    }
+    
+    return `<span class="${badgeClass}"><i class="${icon} me-1"></i>${priority || 'Unknown'}</span>`;
+}
+
+// Search functionality with improved UI feedback
+document.getElementById('searchInput').addEventListener('keyup', function() {
+    const searchText = this.value.toLowerCase();
+    const table = document.getElementById('complaintsTable');
+    const rows = table.getElementsByTagName('tr');
+    let found = false;
+
+    for (let i = 1; i < rows.length; i++) {
+        const row = rows[i];
+        const cells = row.getElementsByTagName('td');
+        let rowFound = false;
+
+        for (let j = 0; j < cells.length; j++) {
+            const cell = cells[j];
+            if (cell.textContent.toLowerCase().includes(searchText)) {
+                rowFound = true;
+                found = true;
+                break;
+            }
+        }
+
+        row.style.display = rowFound ? '' : 'none';
+    }
+    
+    // Show empty state message if no matches found
+    const tbody = table.querySelector('tbody');
+    const noResultsRow = document.getElementById('noResultsRow');
+    
+    if (!found && searchText && !noResultsRow) {
+        const tr = document.createElement('tr');
+        tr.id = 'noResultsRow';
+        tr.innerHTML = `
+            <td colspan="7" class="text-center py-4">
+                <div class="empty-state">
+                    <i class="fas fa-search empty-icon"></i>
+                    <h5>No matching tickets found</h5>
+                    <p>Try adjusting your search terms</p>
+                </div>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    } else if (found && noResultsRow) {
+        noResultsRow.remove();
+    }
+});
+</script>
+{% endblock %} 

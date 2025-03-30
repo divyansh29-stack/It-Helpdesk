@@ -29,7 +29,7 @@ app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
 app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
 
 # Configure Google Generative AI
-GOOGLE_API_KEY = "AIzaSyCDdqf40IMnE_PbNgl82Z0zWaZKlvhd8DM"
+GOOGLE_API_KEY = os.getenv('GEMINI_API_KEY')
 try:
     genai.configure(api_key=GOOGLE_API_KEY)
     # List available models
@@ -128,6 +128,7 @@ def chat_page():
 @login_required
 def chat_api():
     try:
+        # Get JSON data from request
         data = request.json
         if not data or 'message' not in data:
             return jsonify({
@@ -136,14 +137,19 @@ def chat_api():
             }), 400
         
         message = data['message'].strip().lower()
-        step = session.get('chat_step', 0)
         
         # Initialize session if not exists
         if 'chat_step' not in session:
             session['chat_step'] = 0
         
+        # Check if Gemini API is available for more complex steps
+        api_available = model is not None
+        
+        step = session.get('chat_step', 0)
+        print(f"Current chat step: {step}, Message: {message}")
+        
         if step == 0:
-            if message == "hi":
+            if message == "hi" or message == "hello":
                 session['chat_step'] = 1
                 return jsonify({
                     'response': "Hello! I'm your IT Support Assistant. What is your name?",
@@ -151,40 +157,70 @@ def chat_api():
                 })
             else:
                 return jsonify({
-                    'response': "Please type 'Hi' to start the conversation.",
+                    'response': "Please type 'Hi' or 'Hello' to start the conversation.",
                     'requiresComplaint': False
                 })
         elif step == 1:
             session['name'] = message
             session['chat_step'] = 2
             return jsonify({
-                'response': "Please enter your designation.",
+                'response': f"Nice to meet you, {message}! Please enter your designation.",
                 'requiresComplaint': False
             })
         elif step == 2:
             session['designation'] = message
             session['chat_step'] = 3
             return jsonify({
-                'response': "Please enter your department.",
+                'response': "Thank you. Now, please enter your department.",
                 'requiresComplaint': False
             })
         elif step == 3:
             session['department'] = message
             session['chat_step'] = 4
             return jsonify({
-                'response': "Please describe your problem.",
+                'response': "Please describe your IT problem in detail. What issues are you experiencing?",
                 'requiresComplaint': False
             })
         elif step == 4:
             session['problem'] = message
             session['chat_step'] = 5
-            troubleshooting_steps = search_gemini_api(message)
-            session['last_resolution'] = troubleshooting_steps
-            return jsonify({
-                'response': f"Here are some troubleshooting steps:\n{troubleshooting_steps}\n\nDid this resolve your issue? (Yes/No)",
-                'requiresComplaint': False
-            })
+            
+            print(f"Step 4: Problem set to: {message}")  # Debug log
+            
+            # Get troubleshooting steps from API
+            try:
+                troubleshooting_steps = search_gemini_api(message)
+                
+                # Check if API returned valid troubleshooting steps
+                if not api_available or "apologize" in troubleshooting_steps.lower():
+                    print("API unavailable, using fallback troubleshooting")
+                    # Provide generic troubleshooting steps instead of immediately creating a ticket
+                    fallback_steps = get_fallback_troubleshooting_steps(message)
+                    session['last_resolution'] = fallback_steps
+                    print("Fallback troubleshooting steps provided, asking if resolved")
+                    return jsonify({
+                        'response': f"Here are some troubleshooting steps:\n\n{fallback_steps}\n\nDid this resolve your issue? (Yes/No)",
+                        'requiresComplaint': False
+                    })
+                
+                session['last_resolution'] = troubleshooting_steps
+                print("Troubleshooting steps provided, asking if resolved")
+                return jsonify({
+                    'response': f"Here are some troubleshooting steps:\n\n{troubleshooting_steps}\n\nDid this resolve your issue? (Yes/No)",
+                    'requiresComplaint': False
+                })
+            except Exception as e:
+                print(f"Error getting troubleshooting: {str(e)}")
+                # Provide generic troubleshooting steps
+                fallback_steps = get_fallback_troubleshooting_steps(message)
+                session['last_resolution'] = fallback_steps
+                print("Exception handled, using fallback troubleshooting")
+                return jsonify({
+                    'response': f"Here are some troubleshooting steps:\n\n{fallback_steps}\n\nDid this resolve your issue? (Yes/No)",
+                    'requiresComplaint': False
+                })
         elif step == 5:
+            print(f"Step 5: User response to troubleshooting: {message}")  # Debug log
             if message == "yes":
                 # Save resolved issue
                 save_to_excel([
@@ -195,25 +231,70 @@ def chat_api():
                     session.get('last_resolution', 'Unknown')
                 ])
                 session.clear()
+                print("Issue resolved, session cleared")  # Debug log
                 return jsonify({
-                    'response': "Great! Your issue has been resolved. Your details have been saved.",
+                    'response': "Great! I'm glad your issue has been resolved. Your details have been saved, and you can always come back if you need more assistance.",
                     'requiresComplaint': False
                 })
             elif message == "no":
-                # Try alternative solution
-                troubleshooting_steps = search_gemini_api(session.get('problem', ''))
-                session['last_resolution'] = troubleshooting_steps
-                session['chat_step'] = 6
-                return jsonify({
-                    'response': f"Try this instead:\n{troubleshooting_steps}\n\nDid this resolve your issue? (Yes/No)",
-                    'requiresComplaint': False
-                })
+                print("First solution didn't work, checking if API available for alternative")  # Debug log
+                # If API is not available, try a different fallback solution
+                try:
+                    if not api_available:
+                        print("API not available, using secondary fallback solution")  # Debug log
+                        # Provide a more specific fallback solution as the second attempt
+                        current_problem = session.get('problem', '')
+                        secondary_fallback = get_secondary_fallback_steps(current_problem)
+                        session['last_resolution'] = secondary_fallback
+                        session['chat_step'] = 7  # Last attempt
+                        print("Secondary fallback solution provided, asking if it worked")  # Debug log
+                        return jsonify({
+                            'response': f"Let's try these alternative steps instead:\n\n{secondary_fallback}\n\nDid this resolve your issue? (Yes/No)",
+                            'requiresComplaint': False
+                        })
+                    
+                    # Try alternative solution with a different prompt
+                    alt_query = f"Alternative solution for: {session.get('problem', '')}"
+                    troubleshooting_steps = search_gemini_api(alt_query)
+                    
+                    # Check if the API returned a proper response
+                    if "apologize" in troubleshooting_steps.lower():
+                        print("API couldn't find alternative solution, using secondary fallback")  # Debug log
+                        # Provide a more specific fallback solution as the second attempt
+                        current_problem = session.get('problem', '')
+                        secondary_fallback = get_secondary_fallback_steps(current_problem)
+                        session['last_resolution'] = secondary_fallback
+                        session['chat_step'] = 7  # Last attempt
+                        return jsonify({
+                            'response': f"Let's try these alternative steps instead:\n\n{secondary_fallback}\n\nDid this resolve your issue? (Yes/No)",
+                            'requiresComplaint': False
+                        })
+                    
+                    session['last_resolution'] = troubleshooting_steps
+                    session['chat_step'] = 7  # Last attempt
+                    print("Alternative solution provided, asking if it worked")  # Debug log
+                    return jsonify({
+                        'response': f"Let's try this alternative solution instead:\n\n{troubleshooting_steps}\n\nDid this resolve your issue? (Yes/No)",
+                        'requiresComplaint': False
+                    })
+                except Exception as e:
+                    print(f"Error getting alternative solution: {str(e)}")
+                    print("Exception when getting alternative solution, using secondary fallback")  # Debug log
+                    current_problem = session.get('problem', '')
+                    secondary_fallback = get_secondary_fallback_steps(current_problem)
+                    session['last_resolution'] = secondary_fallback
+                    session['chat_step'] = 7  # Last attempt
+                    return jsonify({
+                        'response': f"Let's try these alternative steps instead:\n\n{secondary_fallback}\n\nDid this resolve your issue? (Yes/No)",
+                        'requiresComplaint': False
+                    })
             else:
                 return jsonify({
                     'response': "Please answer with 'Yes' or 'No'.",
                     'requiresComplaint': False
                 })
         elif step == 6:
+            print(f"Step 6: User response to alternative solution: {message}")  # Debug log
             if message == "yes":
                 # Save resolved issue
                 save_to_excel([
@@ -224,72 +305,41 @@ def chat_api():
                     session.get('last_resolution', 'Unknown')
                 ])
                 session.clear()
+                print("Alternative solution worked, session cleared")  # Debug log
                 return jsonify({
-                    'response': "Great! Your issue has been resolved. Your details have been saved.",
+                    'response': "Great! I'm glad the alternative solution worked. Your details have been saved, and you can always come back if you need more assistance.",
                     'requiresComplaint': False
                 })
             elif message == "no":
-                # Create complaint ticket
-                try:
-                    # Get all available technicians
-                    technicians = User.query.filter_by(role='technician').all()
-                    if not technicians:
-                        return jsonify({
-                            'response': "I apologize, but no technicians are available at the moment. Please try again later.",
-                            'requiresComplaint': False
-                        }), 500
-                    
-                    # Assign to technician with least active complaints
-                    assigned_technician = min(technicians, key=lambda t: len([c for c in t.assigned_complaints if c.status != 'Resolved']))
-                    
-                    # Create a new complaint
-                    complaint = Complaint(
-                        complaint_no=str(uuid.uuid4())[:8].upper(),
-                        user_id=current_user.id,
-                        technician_id=assigned_technician.id,
-                        issue=session.get('problem', ''),
-                        status='Open',
-                        priority='Medium',
-                        created_at=datetime.utcnow(),
-                        employee_name=session.get('name', 'Unknown'),
-                        employee_designation=session.get('designation', 'Unknown'),
-                        employee_department=session.get('department', 'Unknown'),
-                        troubleshooting_steps=session.get('last_resolution', ''),
-                        resolution_attempted=True
-                    )
-                    db.session.add(complaint)
-                    db.session.commit()
-                    
-                    # Update Excel sheet
-                    complaint_data = {
-                        'complaint_no': complaint.complaint_no,
-                        'employee_name': current_user.username,
-                        'department': current_user.department,
-                        'employee_code': current_user.employee_code,
-                        'issue_description': session.get('problem', ''),
-                        'status': complaint.status,
-                        'created_at': complaint.created_at,
-                        'resolved_at': None,
-                        'technician_name': assigned_technician.username,
-                        'resolution_time': None,
-                        'comments': ''
-                    }
-                    update_excel_sheet(complaint_data)
-                    
-                    # Clear session
-                    session.clear()
-                    
-                    return jsonify({
-                        'response': f"I've created a support ticket (Ticket No: {complaint.complaint_no}) for your issue. A technician ({assigned_technician.username}) will be assigned to help you. You can track your complaint status in your dashboard.",
-                        'requiresComplaint': False
-                    })
-                except Exception as e:
-                    print(f"Error creating complaint: {str(e)}")
-                    session.clear()
-                    return jsonify({
-                        'response': "I apologize, but I encountered an error while creating your support ticket. Please try again later.",
-                        'requiresComplaint': False
-                    }), 500
+                # Second attempt failed, automatically create a ticket
+                print("Both troubleshooting attempts failed, creating ticket automatically")  # Debug log
+                return create_support_ticket()
+            else:
+                return jsonify({
+                    'response': "Please answer with 'Yes' or 'No'.",
+                    'requiresComplaint': False
+                })
+        elif step == 7:
+            print(f"Step 7: User response to secondary fallback: {message}")  # Debug log
+            if message == "yes":
+                # Save resolved issue
+                save_to_excel([
+                    session.get('name', 'Unknown'),
+                    session.get('designation', 'Unknown'),
+                    session.get('department', 'Unknown'),
+                    session.get('problem', 'Unknown'),
+                    session.get('last_resolution', 'Unknown')
+                ])
+                session.clear()
+                print("Secondary fallback solution worked, session cleared")  # Debug log
+                return jsonify({
+                    'response': "Great! I'm glad the secondary fallback solution worked. Your details have been saved, and you can always come back if you need more assistance.",
+                    'requiresComplaint': False
+                })
+            elif message == "no":
+                # Second attempt failed, automatically create a ticket
+                print("Both troubleshooting attempts failed, creating ticket automatically")  # Debug log
+                return create_support_ticket()
             else:
                 return jsonify({
                     'response': "Please answer with 'Yes' or 'No'.",
@@ -304,277 +354,118 @@ def chat_api():
             'requiresComplaint': False
         }), 500
 
+# Helper function to create a support ticket
+def create_support_ticket():
+    try:
+        print("In create_support_ticket function")  # Debug log
+        # Get all available technicians
+        technicians = User.query.filter_by(role='technician').all()
+        if not technicians:
+            print("No technicians available")  # Debug log
+            return jsonify({
+                'response': "I apologize, but no technicians are available at the moment. Please try again later.",
+                'requiresComplaint': False
+            }), 500
+        
+        # Check if we have problem description
+        problem = session.get('problem', '')
+        if not problem:
+            print("No problem description found in session")  # Debug log
+            return jsonify({
+                'response': "I apologize, but I couldn't determine your issue. Please try again.",
+                'requiresComplaint': False
+            }), 400
+            
+        print(f"Creating ticket for problem: {problem}")  # Debug log
+        
+        # Get user details from session
+        user_name = session.get('name', current_user.username)
+        user_designation = session.get('designation', current_user.designation)
+        user_department = session.get('department', current_user.department)
+        
+        print(f"User details - Name: {user_name}, Designation: {user_designation}, Department: {user_department}")
+        
+        # Assign to technician with least active complaints
+        assigned_technician = min(technicians, key=lambda t: len([c for c in t.assigned_complaints if c.status != 'Resolved']))
+        
+        # Determine priority based on issue type
+        priority = 'Medium'
+        if any(tag in problem.upper() for tag in ['[MEETING]', '[WEBINAR]', '[SEMINAR]']):
+            priority = 'High'  # Meeting-related issues are higher priority
+        
+        # Create a new complaint
+        complaint = Complaint(
+            complaint_no=str(uuid.uuid4())[:8].upper(),
+            user_id=current_user.id,
+            technician_id=assigned_technician.id,
+            issue=problem,
+            status='Open',
+            priority=priority,
+            created_at=datetime.utcnow(),
+            employee_name=user_name,
+            employee_designation=user_designation,
+            employee_department=user_department,
+            troubleshooting_steps=session.get('last_resolution', ''),
+            resolution_attempted=True
+        )
+        db.session.add(complaint)
+        db.session.commit()
+        
+        print(f"Created complaint with ID: {complaint.id}, No: {complaint.complaint_no}")  # Debug log
+        
+        # Update Excel sheet
+        complaint_data = {
+            'complaint_no': complaint.complaint_no,
+            'employee_name': user_name,
+            'department': user_department,
+            'employee_code': current_user.employee_code,
+            'issue_description': problem,
+            'status': complaint.status,
+            'created_at': complaint.created_at,
+            'resolved_at': None,
+            'technician_name': assigned_technician.username,
+            'resolution_time': None,
+            'comments': f"Created through chatbot - Automatically created after troubleshooting failed"
+        }
+        update_excel_sheet(complaint_data)
+        
+        # Store ticket number to display to user
+        ticket_no = complaint.complaint_no
+        technician_name = assigned_technician.username
+        
+        print(f"Returning success response with ticket: {ticket_no}")  # Debug log
+        
+        # Clear session
+        session.clear()
+        
+        # Provide detailed response with ticket information
+        response_message = (
+            f"Since the troubleshooting steps didn't resolve your issue, I've automatically created a support ticket for you:\n\n"
+            f"📝 Ticket Number: {ticket_no}\n"
+            f"👨‍💻 Assigned Technician: {technician_name}\n"
+            f"🔍 Status: Open\n\n"
+            f"You can view this ticket and its progress in your dashboard. The technician will contact you soon to resolve your issue."
+        )
+        
+        return jsonify({
+            'response': response_message,
+            'requiresComplaint': False
+        })
+    except Exception as e:
+        error_msg = str(e)
+        print(f"Error creating complaint: {error_msg}")
+        import traceback
+        print(traceback.format_exc())  # Print full traceback
+        session.clear()
+        return jsonify({
+            'response': "I apologize, but I encountered an error while creating your support ticket. Please try again later.",
+            'requiresComplaint': False
+        }), 500
+
 def search_gemini_api(query):
     try:
         if model is None:
-            # Provide default troubleshooting steps based on common IT issues
-            issue_lower = query.lower()
-            
-            if 'laptop' in issue_lower or 'computer' in issue_lower:
-                return """Here are comprehensive troubleshooting steps for computer/laptop issues:
-
-1. Power and Physical Checks:
-   - Ensure the device is properly plugged into a working power outlet
-   - Check if the power adapter is properly connected and not damaged
-   - Verify the battery is properly seated (for laptops)
-   - Check for any physical damage to the device
-   - Ensure all cables are securely connected
-   - Check if the power button is responsive
-
-2. Display Issues:
-   - Check if the screen is receiving power (backlight)
-   - Verify external display connections if using multiple monitors
-   - Check screen brightness settings
-   - Look for any visible damage to the screen
-   - Try connecting to an external display to isolate screen issues
-
-3. Performance Issues:
-   - Check Task Manager for high CPU/Memory usage
-   - Close unnecessary background applications
-   - Check available disk space
-   - Verify system updates are current
-   - Check for malware or virus infections
-   - Monitor system temperature for overheating
-
-4. Software and System:
-   - Run Windows Update to ensure system is current
-   - Check device manager for driver issues
-   - Verify antivirus software is up to date
-   - Check for conflicting software
-   - Run system file checker (sfc /scannow)
-   - Check for Windows errors in Event Viewer
-
-5. Network and Connectivity:
-   - Verify Wi-Fi/Network adapter is enabled
-   - Check network adapter drivers
-   - Test with different network connections
-   - Verify firewall settings
-   - Check for VPN issues if applicable
-
-6. Data and Storage:
-   - Check disk health using built-in tools
-   - Verify file system integrity
-   - Check for disk errors
-   - Monitor storage space
-   - Verify backup systems
-
-7. When to contact IT support:
-   - If the device won't power on
-   - If you see blue screen errors
-   - If the device is making unusual noises
-   - If you can't access your files
-   - If you see hardware errors in BIOS
-   - If the device is overheating
-   - If you suspect hardware failure
-   - If you need data recovery
-   - If you're experiencing security issues"""
-            
-            elif 'printer' in issue_lower:
-                return """Here are comprehensive troubleshooting steps for printer issues:
-
-1. Physical Checks:
-   - Ensure printer is powered on and plugged in
-   - Check for paper jams in all trays
-   - Verify paper is properly loaded and aligned
-   - Check for any error lights or messages
-   - Ensure all doors and covers are properly closed
-   - Check for any physical damage
-
-2. Paper and Media:
-   - Verify correct paper size is loaded
-   - Check paper type compatibility
-   - Ensure paper is not damp or damaged
-   - Check for proper paper alignment
-   - Verify tray settings match loaded paper
-   - Check for special media requirements
-
-3. Ink/Toner Issues:
-   - Check ink/toner levels
-   - Verify cartridge installation
-   - Check for cartridge errors
-   - Clean print heads if applicable
-   - Verify cartridge compatibility
-   - Check for cartridge expiration
-
-4. Connection Issues:
-   - Verify USB cable connection
-   - Check network connection status
-   - Verify printer IP address
-   - Test with different USB ports
-   - Check for wireless connectivity
-   - Verify printer sharing settings
-
-5. Software and Drivers:
-   - Update printer drivers
-   - Check printer spooler service
-   - Verify printer settings in software
-   - Clear print queue
-   - Check for conflicting software
-   - Verify printer permissions
-
-6. Print Quality:
-   - Run printer calibration
-   - Check print head alignment
-   - Verify resolution settings
-   - Check for color calibration
-   - Verify paper type settings
-   - Check for print mode settings
-
-7. Network and Sharing:
-   - Verify network printer discovery
-   - Check printer sharing permissions
-   - Verify network protocols
-   - Test network connectivity
-   - Check firewall settings
-   - Verify domain/workgroup settings
-
-8. When to contact IT support:
-   - If printer is not responding
-   - If you see hardware errors
-   - If print quality is consistently poor
-   - If printer is making unusual noises
-   - If you need to replace parts
-   - If you're experiencing network issues
-   - If you need to configure new features
-   - If you're having security concerns"""
-            
-            elif 'network' in issue_lower or 'internet' in issue_lower:
-                return """Here are comprehensive troubleshooting steps for network/internet issues:
-
-1. Physical Connection:
-   - Check network cable connections
-   - Verify Wi-Fi adapter is enabled
-   - Check for physical damage to cables
-   - Verify router/modem power
-   - Check for loose connections
-   - Verify network port status
-
-2. Network Adapter:
-   - Check adapter status in Device Manager
-   - Verify driver is up to date
-   - Check for adapter errors
-   - Verify adapter settings
-   - Test with different adapter
-   - Check for hardware conflicts
-
-3. Network Configuration:
-   - Verify IP address settings
-   - Check DNS configuration
-   - Verify network protocols
-   - Check for duplicate IP addresses
-   - Verify subnet mask
-   - Check gateway settings
-
-4. Wi-Fi Specific:
-   - Check Wi-Fi signal strength
-   - Verify correct network selection
-   - Check for interference sources
-   - Verify security settings
-   - Check for MAC filtering
-   - Verify channel settings
-
-5. Browser and Applications:
-   - Clear browser cache
-   - Check proxy settings
-   - Verify SSL/TLS settings
-   - Check for browser extensions
-   - Test with different browsers
-   - Verify application settings
-
-6. Network Security:
-   - Check firewall settings
-   - Verify antivirus settings
-   - Check for security software conflicts
-   - Verify VPN settings
-   - Check for blocked ports
-   - Verify security policies
-
-7. Performance:
-   - Check network speed
-   - Monitor bandwidth usage
-   - Check for network congestion
-   - Verify QoS settings
-   - Monitor latency
-   - Check for packet loss
-
-8. When to contact IT support:
-   - If no devices can connect
-   - If you can't access specific websites
-   - If network is extremely slow
-   - If you see network errors
-   - If you need to configure new equipment
-   - If you're experiencing security issues
-   - If you need to set up new networks
-   - If you're having VPN issues"""
-            
-            else:
-                return """Here are comprehensive general troubleshooting steps:
-
-1. Physical Inspection:
-   - Check for visible damage
-   - Verify power connections
-   - Check for loose components
-   - Verify cable connections
-   - Check for overheating
-   - Look for error indicators
-
-2. Power and Hardware:
-   - Verify power supply
-   - Check for hardware conflicts
-   - Verify component seating
-   - Check for BIOS errors
-   - Verify hardware compatibility
-   - Check for resource conflicts
-
-3. Software and System:
-   - Check for system updates
-   - Verify driver status
-   - Check for software conflicts
-   - Verify system requirements
-   - Check for malware
-   - Verify system integrity
-
-4. Performance:
-   - Monitor resource usage
-   - Check for background processes
-   - Verify system settings
-   - Check for memory issues
-   - Monitor temperature
-   - Check for disk issues
-
-5. Data and Storage:
-   - Verify data integrity
-   - Check storage space
-   - Verify backup systems
-   - Check for file system errors
-   - Monitor disk health
-   - Verify data access
-
-6. Security:
-   - Check security settings
-   - Verify access permissions
-   - Check for security updates
-   - Verify firewall settings
-   - Check for unauthorized access
-   - Verify security policies
-
-7. Network and Connectivity:
-   - Check network status
-   - Verify connection settings
-   - Check for network errors
-   - Verify protocol settings
-   - Check for connectivity issues
-   - Verify network security
-
-8. When to contact IT support:
-   - If the issue persists after basic troubleshooting
-   - If you see error messages
-   - If you can't perform your work
-   - If you're unsure about any steps
-   - If you need specialized tools
-   - If you're experiencing security issues
-   - If you need to replace hardware
-   - If you need to recover data"""
+            return "I apologize, but I couldn't connect to the AI service. Please try again later or contact IT support directly."
             
         prompt = f"""As an IT Support Assistant, provide detailed troubleshooting steps for the following issue:
         {query}
@@ -594,18 +485,21 @@ def search_gemini_api(query):
         When to contact IT support:
         - Situation 1
         - Situation 2
-        - Situation 3"""
+        - Situation 3
+        
+        IMPORTANT: Do not use any asterisks (*) or other special formatting in your response."""
         
         response = model.generate_content(prompt)
         if response and hasattr(response, 'text') and response.text:
-            return response.text
+            # Ensure the response is formatted correctly for display
+            formatted_response = "Here are some troubleshooting steps:\n\n" + response.text
+            return formatted_response
         else:
             print("Empty response from Gemini API")
-            return "I apologize, but I couldn't generate a response. Please try again."
+            return "I apologize, but I couldn't generate a response. Please try again later or contact IT support directly."
     except Exception as e:
         print(f"Error in Gemini API: {str(e)}")
-        # Return default troubleshooting steps based on the query
-        return search_gemini_api(query)  # This will use the default steps above
+        return "I apologize, but there was an error connecting to the AI service. Please try again later or contact IT support directly."
 
 def save_to_excel(data):
     file_path = 'data/user_data.xlsx'
@@ -737,57 +631,9 @@ def save_chat():
 @app.route('/complaint/create', methods=['GET', 'POST'])
 @login_required
 def create_complaint():
-    if request.method == 'POST':
-        issue = request.form.get('issue')
-        priority = request.form.get('priority', 'Medium')
-        
-        # Get all available technicians
-        technicians = User.query.filter_by(role='technician').all()
-        if not technicians:
-            flash('No technicians available')
-            return redirect(url_for('create_complaint'))
-        
-        # Assign to technician with least active complaints
-        assigned_technician = min(technicians, key=lambda t: len([c for c in t.assigned_complaints if c.status != 'Resolved']))
-        
-        # Create a new complaint
-        complaint = Complaint(
-            complaint_no=str(uuid.uuid4())[:8].upper(),
-            user_id=current_user.id,
-            technician_id=assigned_technician.id,  # Automatically assign technician
-            issue=issue,
-            status='Open',
-            priority=priority,
-            created_at=datetime.utcnow(),
-            employee_name=current_user.username,
-            employee_designation=current_user.designation,
-            employee_department=current_user.department,
-            troubleshooting_steps='',
-            resolution_attempted=False
-        )
-        db.session.add(complaint)
-        db.session.commit()
-        
-        # Update Excel sheet
-        complaint_data = {
-            'complaint_no': complaint.complaint_no,
-            'employee_name': current_user.username,
-            'department': current_user.department,
-            'employee_code': current_user.employee_code,
-            'issue_description': issue,
-            'status': complaint.status,
-            'created_at': complaint.created_at,
-            'resolved_at': None,
-            'technician_name': assigned_technician.username,
-            'resolution_time': None,
-            'comments': ''
-        }
-        update_excel_sheet(complaint_data)
-        
-        flash('Complaint created successfully!')
-        return redirect(url_for('employee_dashboard'))
-    
-    return render_template('create_complaint.html')
+    # Redirect all attempts to manually create complaints to the chatbot
+    flash('All IT support tickets must be created through the IT Support Assistant chatbot.', 'info')
+    return redirect(url_for('chat_page'))
 
 @app.route('/complaint/<int:complaint_id>')
 @login_required
@@ -1328,6 +1174,273 @@ def export_complaints_pdf():
         return send_file(pdf_path, as_attachment=True, download_name='complaints.pdf')
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@app.route('/complaint/<int:complaint_id>/update_priority', methods=['POST'])
+@login_required
+def update_complaint_priority(complaint_id):
+    if current_user.role != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    complaint = Complaint.query.get_or_404(complaint_id)
+    
+    try:
+        data = request.json
+        if not data or 'priority' not in data:
+            return jsonify({'error': 'Missing priority in request'}), 400
+            
+        old_priority = complaint.priority
+        complaint.priority = data['priority']
+        db.session.commit()
+        
+        # Add a comment to notify about priority change
+        priority_comment = Comment(
+            content=f"Priority changed from {old_priority} to {data['priority']} by admin ({current_user.username})",
+            user_id=current_user.id,
+            complaint_id=complaint_id
+        )
+        db.session.add(priority_comment)
+        db.session.commit()
+        
+        print(f"Successfully updated priority to {data['priority']} for complaint {complaint_id}")
+        return jsonify({'success': True})
+    except Exception as e:
+        print(f"Error updating priority: {str(e)}")
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 400
+
+# Function to provide fallback troubleshooting steps when API is unavailable
+def get_fallback_troubleshooting_steps(problem):
+    problem_lower = problem.lower()
+    
+    # PC/Computer issues
+    if any(term in problem_lower for term in ['pc', 'computer', 'desktop', 'laptop', 'hanging', 'freeze', 'slow', 'crash']):
+        return """1. Restart your computer completely
+2. Close unnecessary applications and browser tabs
+3. Check for available disk space (at least 10% should be free)
+4. Run a quick virus scan
+5. Update Windows and device drivers
+6. Clear temporary files using Disk Cleanup
+7. Check Task Manager (Ctrl+Shift+Esc) for programs using high resources
+
+Common causes:
+- Too many applications running simultaneously
+- Outdated drivers or operating system
+- Insufficient disk space
+- Hardware issues
+
+When to contact IT support:
+- If the problem persists after trying these steps
+- If you notice unusual behavior that might indicate malware
+- If your computer repeatedly crashes with error messages"""
+
+    # Network/Internet issues
+    elif any(term in problem_lower for term in ['network', 'internet', 'wifi', 'connection', 'connect', 'disconnected']):
+        return """1. Check if other devices can connect to the network
+2. Restart your router/modem (unplug for 30 seconds, then plug back in)
+3. Make sure Wi-Fi is enabled on your device
+4. Try connecting with an Ethernet cable if possible
+5. Forget the network and reconnect with the password
+6. Run Windows network troubleshooter
+
+Common causes:
+- Router/modem issues
+- Wi-Fi signal interference
+- Network configuration problems
+- ISP service outage
+
+When to contact IT support:
+- If multiple devices cannot connect
+- If the network is unusually slow across all devices
+- If you get error messages when trying to connect"""
+
+    # Email issues
+    elif any(term in problem_lower for term in ['email', 'outlook', 'mail', 'gmail', 'message']):
+        return """1. Check your internet connection
+2. Restart your email application
+3. Verify your account settings are correct
+4. Clear your email application cache
+5. Check if you can access email via web browser
+6. Ensure you haven't exceeded storage quota
+
+Common causes:
+- Connection issues
+- Account configuration problems
+- Temporary server outages
+- Full mailbox
+
+When to contact IT support:
+- If you receive specific error codes
+- If you can't access your email after trying these steps
+- If you suspect your account has been compromised"""
+
+    # Printer issues
+    elif any(term in problem_lower for term in ['print', 'printer', 'scanning', 'scanner']):
+        return """1. Check if the printer is powered on and connected to the network
+2. Verify that there is paper in the tray and no paper jams
+3. Restart the printer completely
+4. Remove and re-add the printer on your computer
+5. Update printer drivers
+6. Try printing a test page
+
+Common causes:
+- Connection issues
+- Driver problems
+- Hardware malfunctions
+- Paper jams or low ink/toner
+
+When to contact IT support:
+- If the printer displays error codes
+- If print quality is consistently poor
+- If the printer is making unusual noises"""
+
+    # Software/Application issues
+    elif any(term in problem_lower for term in ['software', 'application', 'program', 'app', 'not working']):
+        return """1. Close and restart the application
+2. Restart your computer
+3. Check for application updates
+4. Uninstall and reinstall the application
+5. Clear the application cache if possible
+6. Check if the application is compatible with your OS version
+
+Common causes:
+- Software bugs or glitches
+- Corrupted installation
+- Compatibility issues
+- Insufficient system resources
+
+When to contact IT support:
+- If you receive specific error messages
+- If reinstallation doesn't solve the problem
+- If the application is mission-critical for your work"""
+
+    # Login/Access issues
+    elif any(term in problem_lower for term in ['login', 'password', 'access', 'account', 'authentication']):
+        return """1. Verify you're using the correct username and password
+2. Check if Caps Lock is turned on
+3. Clear your browser cache and cookies
+4. Try accessing from a different browser
+5. Reset your password if you have self-service options
+6. Check if the service is down for maintenance
+
+Common causes:
+- Incorrect credentials
+- Expired passwords
+- Account lockouts due to multiple failed attempts
+- Browser cache issues
+
+When to contact IT support:
+- If you're locked out of your account
+- If you can't reset your password
+- If you suspect unauthorized access"""
+
+    # Generic fallback
+    else:
+        return """1. Restart the device or application having issues
+2. Check for any error messages and note them down
+3. Verify your internet connection is working
+4. Look for recent changes that might have caused the issue
+5. Search for solutions in the company knowledge base
+6. Try basic troubleshooting specific to the application
+
+Common causes:
+- Temporary system glitches
+- Configuration issues
+- Resource limitations
+- Software bugs
+
+When to contact IT support:
+- If the issue persists after basic troubleshooting
+- If you receive specific error codes
+- If the issue is affecting your productivity
+- If multiple users are experiencing the same problem"""
+
+# Function to provide secondary fallback steps when API is unavailable
+def get_secondary_fallback_steps(problem):
+    problem_lower = problem.lower()
+    
+    # PC/Computer issues
+    if any(term in problem_lower for term in ['pc', 'computer', 'desktop', 'laptop', 'hanging', 'freeze', 'slow', 'crash']):
+        return """1. Check for Windows updates and install if available
+2. Run System File Checker (SFC) by typing 'sfc /scannow' in Command Prompt
+3. Check for hardware issues using built-in diagnostics
+4. Try starting in Safe Mode to determine if it's a software conflict
+5. Check Event Viewer for specific error codes
+6. Perform a memory diagnostic test
+7. Disconnect external devices and test again
+
+This should help identify whether it's a hardware or software issue."""
+
+    # Network/Internet issues
+    elif any(term in problem_lower for term in ['network', 'internet', 'wifi', 'connection', 'connect', 'disconnected']):
+        return """1. Reset TCP/IP stack by running 'netsh winsock reset' in Command Prompt
+2. Release and renew your IP address using 'ipconfig /release' and 'ipconfig /renew'
+3. Flush DNS cache with 'ipconfig /flushdns'
+4. Change DNS settings to public DNS (like Google's 8.8.8.8 and 8.8.4.4)
+5. Check for network adapter driver updates
+6. Disable VPN or proxy if using one
+7. Reset all network devices in the correct order (modem first, then router)
+
+These steps address more advanced network configuration issues."""
+
+    # Email issues
+    elif any(term in problem_lower for term in ['email', 'outlook', 'mail', 'gmail', 'message']):
+        return """1. Run Outlook in Safe Mode (hold Ctrl while launching)
+2. Create a new Outlook profile and test with that
+3. Check if your mailbox needs to be repaired with the Inbox Repair Tool (scanpst.exe)
+4. Disable add-ins that might be causing issues
+5. Check your email account settings for maximum size limits
+6. Check if your email client is in offline mode
+7. Verify your anti-virus isn't blocking email connections
+
+These solutions target Outlook-specific issues and account configuration problems."""
+
+    # Printer issues
+    elif any(term in problem_lower for term in ['print', 'printer', 'scanning', 'scanner']):
+        return """1. Clear the print queue (stop and restart Print Spooler service)
+2. Check printer IP address and make sure it hasn't changed
+3. Set a static IP for the printer if possible
+4. Update printer firmware (check manufacturer website)
+5. Check if printer needs calibration
+6. Try a different USB port or cable if directly connected
+7. Print directly to the device using its web interface if available
+
+These steps help with more complex printer connection and driver issues."""
+
+    # Software/Application issues
+    elif any(term in problem_lower for term in ['software', 'application', 'program', 'app', 'not working']):
+        return """1. Launch the application with admin privileges
+2. Check for conflicts with anti-virus or firewall settings
+3. Run the application in compatibility mode
+4. Create a new user profile and test there
+5. Check application logs for specific errors
+6. Verify all dependencies are installed (like .NET Framework or Visual C++ Redistributables)
+7. Try repairing the installation through Control Panel > Programs and Features
+
+These steps help identify permission issues and software conflicts."""
+
+    # Login/Access issues
+    elif any(term in problem_lower for term in ['login', 'password', 'access', 'account', 'authentication']):
+        return """1. Check if your account is locked due to too many failed attempts
+2. Ensure your device time and date are accurate (important for authentication)
+3. Check if you need to connect to VPN first before accessing certain systems
+4. Try accessing from a different device to determine if it's device-specific
+5. Check if multi-factor authentication needs to be reconfigured
+6. Verify that your account hasn't expired or been disabled
+7. Make sure you're using the correct domain if applicable (corporate vs. local account)
+
+These steps address more complex authentication and account access issues."""
+
+    # Generic fallback
+    else:
+        return """1. Take screenshots of any error messages for support reference
+2. Check if colleagues are experiencing similar issues
+3. Note when the issue started and any changes made around that time
+4. Try using an alternative software/method temporarily if available
+5. Check system requirements for the software you're using
+6. Review recent updates that might have affected system behavior
+7. Create a detailed document of when the issue occurs and steps to reproduce
+
+Having this documentation will help support staff diagnose and fix the issue more quickly."""
 
 if __name__ == '__main__':
     with app.app_context():

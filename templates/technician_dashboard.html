@@ -132,7 +132,14 @@
                         <h6 class="text-muted mb-3">Complaint Information</h6>
                         <p><strong>Complaint No:</strong> <span id="complaintNo"></span></p>
                         <p><strong>Status:</strong> <span id="complaintStatus"></span></p>
-                        <p><strong>Priority:</strong> <span id="complaintPriority"></span></p>
+                        <p>
+                            <strong>Priority:</strong> 
+                            <span id="complaintPriority"></span>
+                            <span class="ms-2 d-none" id="highPriorityIndicator">
+                                <i class="fas fa-exclamation-triangle text-danger"></i>
+                                <small class="text-danger fw-bold">HIGH PRIORITY - Requires immediate attention</small>
+                            </span>
+                        </p>
                         <p><strong>Created At:</strong> <span id="complaintCreatedAt"></span></p>
                         <p><strong>Assigned To:</strong> <span id="complaintAssignedTo"></span></p>
                     </div>
@@ -224,24 +231,29 @@
 {% block scripts %}
 <script>
 function viewComplaint(complaintId) {
-    console.log('Fetching complaint details for ID:', complaintId); // Debug log
-    
     fetch(`/complaint/${complaintId}`)
         .then(response => {
             if (!response.ok) {
-                return response.json().then(data => {
-                    throw new Error(data.error || `HTTP error! status: ${response.status}`);
-                });
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
             return response.json();
         })
         .then(data => {
-            console.log('Received complaint data:', data); // Debug log
-            
-            // Update modal content with fallback values
+            // Update modal content
             document.getElementById('complaintNo').textContent = data.complaint_no || 'N/A';
             document.getElementById('complaintStatus').innerHTML = `<span class="badge ${getStatusBadgeClass(data.status)}">${data.status || 'Unknown'}</span>`;
             document.getElementById('complaintPriority').innerHTML = `<span class="badge ${getPriorityBadgeClass(data.priority)}">${data.priority || 'Unknown'}</span>`;
+            
+            // Show high priority indicator if priority is High
+            const highPriorityIndicator = document.getElementById('highPriorityIndicator');
+            if (highPriorityIndicator) {
+                if (data.priority === 'High') {
+                    highPriorityIndicator.classList.remove('d-none');
+                } else {
+                    highPriorityIndicator.classList.add('d-none');
+                }
+            }
+            
             document.getElementById('complaintCreatedAt').textContent = data.created_at ? new Date(data.created_at).toLocaleString() : 'N/A';
             document.getElementById('complaintAssignedTo').textContent = data.technician ? data.technician.username : 'Unassigned';
             document.getElementById('employeeName').textContent = data.employee_name || 'N/A';
@@ -272,7 +284,7 @@ function viewComplaint(complaintId) {
         })
         .catch(error => {
             console.error('Error fetching complaint details:', error);
-            alert(`Error loading complaint details: ${error.message}. Please check the console for more information.`);
+            alert('Error loading complaint details. Please try again.');
         });
 }
 
@@ -381,5 +393,83 @@ document.getElementById('searchInput').addEventListener('keyup', function() {
         row.style.display = found ? '' : 'none';
     }
 });
+
+// Sort complaints by priority and status when the page loads
+document.addEventListener('DOMContentLoaded', function() {
+    sortComplaintsByPriority();
+    
+    // Initialize search functionality
+    document.getElementById('searchButton').addEventListener('click', searchComplaints);
+    document.getElementById('searchInput').addEventListener('keyup', function(e) {
+        if (e.key === 'Enter') {
+            searchComplaints();
+        }
+    });
+});
+
+// Function to sort complaints by priority (High first) and then by status (Open first)
+function sortComplaintsByPriority() {
+    const table = document.getElementById('complaintsTable');
+    if (!table) return;
+    
+    const tbody = table.querySelector('tbody');
+    if (!tbody) return;
+    
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    
+    // Sort rows by priority and status
+    rows.sort((a, b) => {
+        // Get priority from the 5th column (index 4)
+        const priorityA = a.cells[4].textContent.trim();
+        const priorityB = b.cells[4].textContent.trim();
+        
+        // Get status from the 4th column (index 3)
+        const statusA = a.cells[3].textContent.trim();
+        const statusB = b.cells[3].textContent.trim();
+        
+        // Priority score (High = 3, Medium = 2, Low = 1)
+        const priorityScoreA = priorityA.includes('High') ? 3 : priorityA.includes('Medium') ? 2 : 1;
+        const priorityScoreB = priorityB.includes('High') ? 3 : priorityB.includes('Medium') ? 2 : 1;
+        
+        // Status score (Open = 3, In Progress = 2, Resolved = 1)
+        const statusScoreA = statusA.includes('Open') ? 3 : statusA.includes('In Progress') ? 2 : 1;
+        const statusScoreB = statusB.includes('Open') ? 3 : statusB.includes('In Progress') ? 2 : 1;
+        
+        // Sort by priority first, then by status
+        if (priorityScoreA !== priorityScoreB) {
+            return priorityScoreB - priorityScoreA; // Higher priority first
+        }
+        
+        return statusScoreB - statusScoreA; // More urgent status first
+    });
+    
+    // Clear and re-append rows in the sorted order
+    rows.forEach(row => tbody.appendChild(row));
+    
+    // Highlight high priority rows
+    rows.forEach(row => {
+        const priorityCell = row.cells[4];
+        if (priorityCell.textContent.includes('High')) {
+            row.classList.add('table-danger');
+        } else {
+            row.classList.remove('table-danger');
+        }
+    });
+}
+
+// Function to search complaints
+function searchComplaints() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const tableRows = document.querySelectorAll('#complaintsTable tbody tr');
+    
+    tableRows.forEach(row => {
+        const textContent = row.textContent.toLowerCase();
+        if (textContent.includes(searchTerm)) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+}
 </script>
 {% endblock %} 

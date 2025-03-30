@@ -1,0 +1,381 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="create-complaint-container">
+    <div class="header-card">
+        <div class="header-icon">
+            <i class="fas fa-ticket-alt"></i>
+        </div>
+        <div class="header-text">
+            <h2>Create Support Ticket</h2>
+            <p>Manual tickets are only for meeting, webinar, or seminar issues</p>
+        </div>
+    </div>
+
+    <div class="complaint-card">
+        <form method="POST" id="complaintForm">
+            <div class="row">
+                <div class="col-md-12 mb-4">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i> For issues not related to the options below, please use the <a href="{{ url_for('chat_page') }}">IT Support Assistant</a>.
+                    </div>
+                    
+                    <div class="form-label mb-3">
+                        <strong><i class="fas fa-exclamation-circle me-2"></i>Select your issue type:</strong>
+                    </div>
+                    
+                    <div class="issue-options mb-4">
+                        <div class="form-check issue-option-card">
+                            <input class="form-check-input" type="radio" name="issueType" id="meetingIssue" value="meeting" required>
+                            <label class="form-check-label" for="meetingIssue">
+                                <div class="issue-icon"><i class="fas fa-video"></i></div>
+                                <div class="issue-title">Meeting Technical Issues</div>
+                                <div class="issue-desc">Audio/video problems, connection issues in online meetings</div>
+                            </label>
+                        </div>
+                        
+                        <div class="form-check issue-option-card">
+                            <input class="form-check-input" type="radio" name="issueType" id="webinarIssue" value="webinar">
+                            <label class="form-check-label" for="webinarIssue">
+                                <div class="issue-icon"><i class="fas fa-laptop-code"></i></div>
+                                <div class="issue-title">Webinar Setup & Management</div>
+                                <div class="issue-desc">Problems with hosting, presentations, or participant management</div>
+                            </label>
+                        </div>
+                        
+                        <div class="form-check issue-option-card">
+                            <input class="form-check-input" type="radio" name="issueType" id="seminarIssue" value="seminar">
+                            <label class="form-check-label" for="seminarIssue">
+                                <div class="issue-icon"><i class="fas fa-users-class"></i></div>
+                                <div class="issue-title">Seminar Equipment Issues</div>
+                                <div class="issue-desc">Projector, sound system, or conference room technical problems</div>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="invalid-feedback d-none" id="issueFeedback">
+                        Please select one of the meeting-related issues above.
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-12 mb-4">
+                    <div class="form-floating">
+                        <textarea class="form-control" id="issue" name="issue" style="height: 120px" required></textarea>
+                        <label for="issue">
+                            <i class="fas fa-exclamation-circle me-1"></i> Describe your issue in detail
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-4">
+                    <div class="form-floating">
+                        <select class="form-select" id="priority" name="priority" required>
+                            <option value="Low">Low</option>
+                            <option value="Medium" selected>Medium</option>
+                            <option value="High">High</option>
+                        </select>
+                        <label for="priority">
+                            <i class="fas fa-arrow-circle-up me-1"></i> Priority
+                        </label>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-4">
+                    <div class="form-floating">
+                        <input type="text" class="form-control" id="impactedUsers" name="impactedUsers">
+                        <label for="impactedUsers">
+                            <i class="fas fa-users me-1"></i> Number of impacted users
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-12 mb-4">
+                    <div class="form-floating">
+                        <input type="text" class="form-control" id="attachments" name="attachments">
+                        <label for="attachments">
+                            <i class="fas fa-paperclip me-1"></i> Attachments (e.g., screenshots, error messages)
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-12">
+                    <button type="submit" id="submitButton" class="btn btn-primary submit-btn">
+                        <i class="fas fa-paper-plane me-2"></i> Submit Ticket
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    .create-complaint-container {
+        max-width: 800px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+    }
+    
+    .header-card {
+        display: flex;
+        align-items: center;
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        color: white;
+        padding: 1.5rem;
+        border-radius: var(--border-radius);
+        margin-bottom: 1.5rem;
+        box-shadow: var(--box-shadow);
+    }
+    
+    .header-icon {
+        background: rgba(255, 255, 255, 0.2);
+        width: 60px;
+        height: 60px;
+        border-radius: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.75rem;
+        margin-right: 1.5rem;
+    }
+    
+    .header-text h2 {
+        margin: 0;
+        font-weight: 600;
+    }
+    
+    .header-text p {
+        margin: 0.25rem 0 0;
+        opacity: 0.9;
+    }
+    
+    .complaint-card {
+        background: white;
+        border-radius: var(--border-radius);
+        padding: 2rem;
+        box-shadow: var(--box-shadow);
+    }
+    
+    .issue-options {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+    
+    .issue-option-card {
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        border-radius: 10px;
+        padding: 1.25rem;
+        margin: 0;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        height: 100%;
+    }
+    
+    .issue-option-card:hover {
+        border-color: var(--secondary-color);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        transform: translateY(-3px);
+    }
+    
+    .issue-option-card input {
+        position: absolute;
+        top: 1.5rem;
+        left: 1.5rem;
+    }
+    
+    .issue-option-card .form-check-label {
+        display: flex;
+        flex-direction: column;
+        padding-left: 1.5rem;
+        cursor: pointer;
+        width: 100%;
+    }
+    
+    .issue-icon {
+        font-size: 2rem;
+        margin-bottom: 1rem;
+        color: var(--secondary-color);
+        display: flex;
+        justify-content: center;
+    }
+    
+    .issue-title {
+        font-weight: 600;
+        font-size: 1.1rem;
+        margin-bottom: 0.5rem;
+        text-align: center;
+    }
+    
+    .issue-desc {
+        font-size: 0.85rem;
+        color: var(--light-text);
+        text-align: center;
+    }
+    
+    .form-check-input:checked ~ .form-check-label .issue-option-card {
+        border-color: var(--secondary-color);
+        background-color: rgba(var(--secondary-color-rgb), 0.05);
+    }
+    
+    .form-floating > label {
+        padding-left: 1rem;
+    }
+    
+    .form-control, .form-select {
+        border-radius: 8px;
+        border: 1px solid rgba(0, 0, 0, 0.1);
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: var(--secondary-color);
+        box-shadow: 0 0 0 0.25rem rgba(var(--secondary-color-rgb), 0.25);
+    }
+    
+    .submit-btn {
+        width: 100%;
+        padding: 0.75rem;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+    }
+    
+    .submit-btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .header-card, .complaint-card {
+        animation: fadeIn 0.6s ease forwards;
+    }
+    
+    .complaint-card {
+        animation-delay: 0.2s;
+    }
+    
+    .invalid-feedback {
+        color: #dc3545;
+    }
+    
+    .alert-info {
+        background-color: rgba(var(--primary-color-rgb), 0.1);
+        border: none;
+        border-left: 4px solid var(--primary-color);
+        color: var(--dark-text);
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('complaintForm');
+        const issueOptions = document.querySelectorAll('input[name="issueType"]');
+        const issueFeedback = document.getElementById('issueFeedback');
+        const submitButton = document.getElementById('submitButton');
+        const issueTextarea = document.getElementById('issue');
+        
+        // Check if we came from the chatbot with a specific issue type
+        const issueType = "{{ issue_type }}";
+        if (issueType) {
+            // Select the corresponding radio button
+            const radioToSelect = document.getElementById(issueType + 'Issue');
+            if (radioToSelect) {
+                radioToSelect.checked = true;
+                
+                // Trigger the template update
+                let template = '';
+                if (issueType === 'meeting') {
+                    template = 'I am experiencing technical issues with an online meeting. The specific problem is: ';
+                } else if (issueType === 'webinar') {
+                    template = 'I need assistance with a webinar setup/management. The specific issue is: ';
+                } else if (issueType === 'seminar') {
+                    template = 'I am having trouble with seminar equipment. The specific problem is: ';
+                }
+                
+                if (template) {
+                    issueTextarea.value = template;
+                    setTimeout(() => {
+                        issueTextarea.focus();
+                        issueTextarea.setSelectionRange(issueTextarea.value.length, issueTextarea.value.length);
+                    }, 300);
+                }
+            }
+        }
+        
+        // Check if we came from the chatbot (check URL parameters)
+        const urlParams = new URLSearchParams(window.location.search);
+        const fromChatbot = urlParams.get('from_chatbot');
+        
+        // If this is a direct access (not from chatbot), enforce issue selection validation
+        const isDirectAccess = !fromChatbot;
+        
+        // Make issue cards clickable
+        document.querySelectorAll('.issue-option-card').forEach(card => {
+            card.addEventListener('click', function() {
+                const radio = this.querySelector('input[type="radio"]');
+                radio.checked = true;
+                
+                // Update issue textarea with a template based on selection
+                const issueType = radio.value;
+                let template = '';
+                
+                if (issueType === 'meeting') {
+                    template = 'I am experiencing technical issues with an online meeting. The specific problem is: ';
+                } else if (issueType === 'webinar') {
+                    template = 'I need assistance with a webinar setup/management. The specific issue is: ';
+                } else if (issueType === 'seminar') {
+                    template = 'I am having trouble with seminar equipment. The specific problem is: ';
+                }
+                
+                issueTextarea.value = template;
+                issueTextarea.focus();
+                issueTextarea.setSelectionRange(issueTextarea.value.length, issueTextarea.value.length);
+            });
+        });
+        
+        form.addEventListener('submit', function(e) {
+            let isValid = false;
+            
+            // Check if any issue type is selected
+            issueOptions.forEach(option => {
+                if (option.checked) {
+                    isValid = true;
+                }
+            });
+            
+            if (!isValid) {
+                e.preventDefault();
+                issueFeedback.classList.remove('d-none');
+                
+                // Scroll to the error
+                issueFeedback.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                
+                // Show alert
+                alert('Please select one of the meeting, webinar, or seminar issues above.');
+            } else {
+                // Form is valid, allow submission
+                issueFeedback.classList.add('d-none');
+            }
+        });
+        
+        // Hide error when an option is selected
+        issueOptions.forEach(option => {
+            option.addEventListener('change', function() {
+                if (this.checked) {
+                    issueFeedback.classList.add('d-none');
+                }
+            });
+        });
+    });
+</script>
+{% endblock %} 

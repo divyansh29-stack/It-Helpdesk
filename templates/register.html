@@ -1,0 +1,262 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5 mb-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-6 col-md-8">
+            <div class="card animate-fadeInUp" style="opacity: 0;">
+                <div class="card-header text-center py-4">
+                    <div class="mb-3">
+                        <i class="fas fa-user-plus fa-3x text-primary"></i>
+                    </div>
+                    <h3 class="card-title">Create Your Account</h3>
+                    <p class="text-muted mb-0">Join the IT Helpdesk Portal</p>
+                </div>
+                <div class="card-body p-4">
+                    {% with messages = get_flashed_messages() %}
+                        {% if messages %}
+                            {% for message in messages %}
+                                <div class="alert alert-danger">
+                                    <i class="fas fa-exclamation-circle me-2"></i>
+                                    {{ message }}
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+                    
+                    <form method="POST" class="register-form">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="username" class="form-label">
+                                        <i class="fas fa-user me-2"></i>Username
+                                    </label>
+                                    <input type="text" class="form-control" id="username" name="username" placeholder="Choose a username" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="email" class="form-label">
+                                        <i class="fas fa-envelope me-2"></i>Email
+                                    </label>
+                                    <input type="email" class="form-control" id="email" name="email" placeholder="Your email address" required>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group mb-3">
+                            <label for="password" class="form-label">
+                                <i class="fas fa-lock me-2"></i>Password
+                            </label>
+                            <div class="input-group">
+                                <input type="password" class="form-control" id="password" name="password" placeholder="Create a strong password" required>
+                                <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                            <div class="password-strength mt-2 d-none" id="passwordStrength">
+                                <small class="text-muted">Password strength: <span id="strengthText">Weak</span></small>
+                                <div class="progress mt-1" style="height: 5px;">
+                                    <div id="strengthBar" class="progress-bar bg-danger" role="progressbar" style="width: 10%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="role" class="form-label">
+                                        <i class="fas fa-user-tag me-2"></i>Role
+                                    </label>
+                                    <select class="form-select" id="role" name="role" required>
+                                        <option value="" selected disabled>Select your role</option>
+                                        <option value="employee">Employee</option>
+                                        <option value="technician">Technician</option>
+                                        <option value="admin">Administrator</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="department" class="form-label">
+                                        <i class="fas fa-building me-2"></i>Department
+                                    </label>
+                                    <input type="text" class="form-control" id="department" name="department" placeholder="Your department" required>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="designation" class="form-label">
+                                        <i class="fas fa-briefcase me-2"></i>Designation
+                                    </label>
+                                    <input type="text" class="form-control" id="designation" name="designation" placeholder="Your job title" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="employee_code" class="form-label">
+                                        <i class="fas fa-id-card me-2"></i>Employee Code
+                                    </label>
+                                    <input type="text" class="form-control" id="employee_code" name="employee_code" placeholder="Your employee ID" required>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-check mb-4 mt-2">
+                            <input type="checkbox" class="form-check-input" id="terms" name="terms" required>
+                            <label class="form-check-label" for="terms">
+                                I agree to the <a href="#" class="text-primary">Terms and Conditions</a>
+                            </label>
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary py-3">
+                                <i class="fas fa-user-plus me-2"></i>Create Account
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                <div class="card-footer bg-white text-center py-3 border-0">
+                    <p class="mb-0">Already have an account? 
+                        <a href="{{ url_for('login') }}" class="text-primary fw-bold">Login here</a>
+                    </p>
+                </div>
+            </div>
+            
+            <div class="text-center text-muted mt-4 animate-fadeInUp" style="opacity: 0;">
+                <small>© 2024 IT Helpdesk Portal. All rights reserved.</small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Toggle password visibility
+        const togglePassword = document.getElementById('togglePassword');
+        const password = document.getElementById('password');
+        
+        togglePassword.addEventListener('click', function() {
+            const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
+            password.setAttribute('type', type);
+            this.querySelector('i').classList.toggle('fa-eye');
+            this.querySelector('i').classList.toggle('fa-eye-slash');
+        });
+        
+        // Password strength indicator
+        const passwordInput = document.getElementById('password');
+        const strengthBar = document.getElementById('strengthBar');
+        const strengthText = document.getElementById('strengthText');
+        const strengthIndicator = document.getElementById('passwordStrength');
+        
+        passwordInput.addEventListener('input', function() {
+            const val = passwordInput.value;
+            strengthIndicator.classList.remove('d-none');
+            
+            let strength = 0;
+            if (val.match(/[a-z]+/)) strength += 1;
+            if (val.match(/[A-Z]+/)) strength += 1;
+            if (val.match(/[0-9]+/)) strength += 1;
+            if (val.match(/[!@#$%^&*()]+/)) strength += 1;
+            if (val.length >= 8) strength += 1;
+            
+            switch (strength) {
+                case 0:
+                    strengthBar.className = 'progress-bar bg-danger';
+                    strengthBar.style.width = '10%';
+                    strengthText.textContent = 'Very Weak';
+                    break;
+                case 1:
+                    strengthBar.className = 'progress-bar bg-danger';
+                    strengthBar.style.width = '20%';
+                    strengthText.textContent = 'Weak';
+                    break;
+                case 2:
+                    strengthBar.className = 'progress-bar bg-warning';
+                    strengthBar.style.width = '40%';
+                    strengthText.textContent = 'Fair';
+                    break;
+                case 3:
+                    strengthBar.className = 'progress-bar bg-info';
+                    strengthBar.style.width = '60%';
+                    strengthText.textContent = 'Good';
+                    break;
+                case 4:
+                    strengthBar.className = 'progress-bar bg-success';
+                    strengthBar.style.width = '80%';
+                    strengthText.textContent = 'Strong';
+                    break;
+                case 5:
+                    strengthBar.className = 'progress-bar bg-success';
+                    strengthBar.style.width = '100%';
+                    strengthText.textContent = 'Very Strong';
+                    break;
+            }
+            
+            if (val === '') {
+                strengthIndicator.classList.add('d-none');
+            }
+        });
+        
+        // Form validation
+        const form = document.querySelector('.register-form');
+        form.addEventListener('submit', function(e) {
+            const password = document.getElementById('password').value;
+            const terms = document.getElementById('terms').checked;
+            
+            if (password.length < 6) {
+                e.preventDefault();
+                alert('Password must be at least 6 characters long');
+                return false;
+            }
+            
+            if (!terms) {
+                e.preventDefault();
+                alert('You must agree to the Terms and Conditions');
+                return false;
+            }
+            
+            return true;
+        });
+    });
+</script>
+<style>
+    .register-form .form-control,
+    .register-form .form-select {
+        transition: all 0.3s ease;
+    }
+    
+    .register-form .form-control:focus,
+    .register-form .form-select:focus {
+        transform: translateY(-2px);
+    }
+    
+    .card-footer a {
+        position: relative;
+        text-decoration: none;
+    }
+    
+    .card-footer a:after {
+        content: '';
+        position: absolute;
+        width: 100%;
+        height: 2px;
+        bottom: -2px;
+        left: 0;
+        background: linear-gradient(90deg, var(--secondary-color), var(--accent-color));
+        transform: scaleX(0);
+        transform-origin: right;
+        transition: transform 0.3s ease;
+    }
+    
+    .card-footer a:hover:after {
+        transform: scaleX(1);
+        transform-origin: left;
+    }
+</style>
+{% endblock %} 

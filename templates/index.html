@@ -1,0 +1,519 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="container">
+        <div class="row align-items-center py-5">
+            <div class="col-lg-6 animate-fadeInUp" style="opacity: 0;">
+                <h1 class="display-4 fw-bold mb-4">Next-Gen <span class="text-gradient">IT Support</span> Platform</h1>
+                <p class="lead mb-4">Streamlined IT helpdesk system with AI-powered chatbot, efficient ticket management, and real-time analytics.</p>
+                <div class="hero-btns">
+                    <a href="{{ url_for('login') }}" class="btn btn-primary btn-lg me-3">
+                        <i class="fas fa-sign-in-alt me-2"></i>Get Started
+                    </a>
+                    <a href="#features" class="btn btn-outline-secondary btn-lg">
+                        <i class="fas fa-info-circle me-2"></i>Learn More
+                    </a>
+                </div>
+                <div class="hero-stats mt-5">
+                    <div class="row g-3">
+                        <div class="col-4">
+                            <div class="stat-card">
+                                <h3 class="stat-number">98%</h3>
+                                <p class="stat-label">Resolution Rate</p>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="stat-card">
+                                <h3 class="stat-number">15min</h3>
+                                <p class="stat-label">Avg. Response</p>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="stat-card">
+                                <h3 class="stat-number">24/7</h3>
+                                <p class="stat-label">Support</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6 text-center animate-fadeInUp" style="opacity: 0; animation-delay: 0.3s;">
+                <div class="hero-image">
+                    <img src="https://illustrations.popsy.co/amber/customer-support.svg" alt="IT Support" class="img-fluid">
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="hero-wave">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="#f8f9fd" fill-opacity="1" d="M0,160L48,170.7C96,181,192,203,288,186.7C384,171,480,117,576,122.7C672,128,768,192,864,202.7C960,213,1056,171,1152,154.7C1248,139,1344,149,1392,154.7L1440,160L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>
+    </div>
+</section>
+
+<!-- User Roles Section -->
+<section class="role-section py-5" id="roles">
+    <div class="container">
+        <div class="text-center mb-5 animate-fadeInUp" style="opacity: 0;">
+            <h2 class="section-title">Tailored for Everyone</h2>
+            <p class="section-subtitle">Our platform serves different roles with specialized features</p>
+        </div>
+        <div class="row g-4">
+            <div class="col-md-4 animate-fadeInUp" style="opacity: 0; animation-delay: 0.1s;">
+                <div class="role-card employee-card">
+                    <div class="role-icon">
+                        <i class="fas fa-user-tie"></i>
+                    </div>
+                    <h3>For Employees</h3>
+                    <ul class="role-features">
+                        <li><i class="fas fa-check-circle"></i> Report IT issues via AI chatbot</li>
+                        <li><i class="fas fa-check-circle"></i> Track complaint status in real-time</li>
+                        <li><i class="fas fa-check-circle"></i> Get instant troubleshooting help</li>
+                        <li><i class="fas fa-check-circle"></i> Provide feedback on resolutions</li>
+                    </ul>
+                    <a href="{{ url_for('login') }}" class="btn btn-primary">
+                        <i class="fas fa-sign-in-alt me-2"></i>Login as Employee
+                    </a>
+                </div>
+            </div>
+            <div class="col-md-4 animate-fadeInUp" style="opacity: 0; animation-delay: 0.2s;">
+                <div class="role-card technician-card">
+                    <div class="role-icon">
+                        <i class="fas fa-tools"></i>
+                    </div>
+                    <h3>For Technicians</h3>
+                    <ul class="role-features">
+                        <li><i class="fas fa-check-circle"></i> View assigned complaints</li>
+                        <li><i class="fas fa-check-circle"></i> Update issue status & progress</li>
+                        <li><i class="fas fa-check-circle"></i> Add detailed resolution notes</li>
+                        <li><i class="fas fa-check-circle"></i> Track resolution timelines</li>
+                    </ul>
+                    <a href="{{ url_for('login') }}" class="btn btn-primary">
+                        <i class="fas fa-sign-in-alt me-2"></i>Login as Technician
+                    </a>
+                </div>
+            </div>
+            <div class="col-md-4 animate-fadeInUp" style="opacity: 0; animation-delay: 0.3s;">
+                <div class="role-card admin-card">
+                    <div class="role-icon">
+                        <i class="fas fa-user-shield"></i>
+                    </div>
+                    <h3>For Administrators</h3>
+                    <ul class="role-features">
+                        <li><i class="fas fa-check-circle"></i> Monitor system performance</li>
+                        <li><i class="fas fa-check-circle"></i> Generate analytical reports</li>
+                        <li><i class="fas fa-check-circle"></i> Manage users & resources</li>
+                        <li><i class="fas fa-check-circle"></i> Set up escalation protocols</li>
+                    </ul>
+                    <a href="{{ url_for('login') }}" class="btn btn-primary">
+                        <i class="fas fa-sign-in-alt me-2"></i>Login as Admin
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section class="features-section py-5" id="features">
+    <div class="container">
+        <div class="text-center mb-5 animate-fadeInUp" style="opacity: 0;">
+            <h2 class="section-title">Powerful Features</h2>
+            <p class="section-subtitle">Our platform combines cutting-edge technology with user-friendly design</p>
+        </div>
+        <div class="row g-4">
+            <div class="col-lg-3 col-md-6 animate-fadeInUp" style="opacity: 0; animation-delay: 0.1s;">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <h3>AI Chatbot</h3>
+                    <p>24/7 automated support with intelligent troubleshooting powered by Gemini API</p>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 animate-fadeInUp" style="opacity: 0; animation-delay: 0.2s;">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-ticket-alt"></i>
+                    </div>
+                    <h3>Ticket System</h3>
+                    <p>Efficient ticket creation, tracking, and resolution workflow management</p>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 animate-fadeInUp" style="opacity: 0; animation-delay: 0.3s;">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <h3>Analytics</h3>
+                    <p>In-depth insights into support performance with real-time dashboards</p>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 animate-fadeInUp" style="opacity: 0; animation-delay: 0.4s;">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-bell"></i>
+                    </div>
+                    <h3>Notifications</h3>
+                    <p>Instant updates on ticket status changes and resolution progress</p>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 animate-fadeInUp" style="opacity: 0; animation-delay: 0.5s;">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <h3>SLA Management</h3>
+                    <p>Track and manage service level agreements with automatic escalation</p>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 animate-fadeInUp" style="opacity: 0; animation-delay: 0.6s;">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-file-export"></i>
+                    </div>
+                    <h3>Export Options</h3>
+                    <p>Generate reports in multiple formats including PDF, Excel, and CSV</p>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 animate-fadeInUp" style="opacity: 0; animation-delay: 0.7s;">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-mobile-alt"></i>
+                    </div>
+                    <h3>Responsive Design</h3>
+                    <p>Access the helpdesk from any device with a fully responsive interface</p>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 animate-fadeInUp" style="opacity: 0; animation-delay: 0.8s;">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-lock"></i>
+                    </div>
+                    <h3>Secure Access</h3>
+                    <p>Role-based permissions and secure authentication system</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Call to Action -->
+<section class="cta-section py-5">
+    <div class="container">
+        <div class="cta-card animate-fadeInUp" style="opacity: 0;">
+            <div class="row align-items-center">
+                <div class="col-lg-8">
+                    <h2>Ready to simplify your IT support?</h2>
+                    <p>Get started with our AI-powered helpdesk system today!</p>
+                </div>
+                <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+                    <a href="{{ url_for('register') }}" class="btn btn-light btn-lg">
+                        <i class="fas fa-rocket me-2"></i>Create Account
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<style>
+/* Hero Section */
+.hero-section {
+    background: linear-gradient(135deg, rgba(26, 36, 54, 0.05), rgba(67, 97, 238, 0.15));
+    padding: 6rem 0 0;
+    position: relative;
+    overflow: hidden;
+}
+
+.text-gradient {
+    background: linear-gradient(90deg, var(--secondary-color), var(--accent-color));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.hero-wave {
+    position: relative;
+    margin-top: -10px;
+}
+
+.hero-btns .btn {
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+}
+
+.stat-card {
+    background: white;
+    border-radius: 10px;
+    padding: 1rem;
+    text-align: center;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+    transition: var(--transition);
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.stat-number {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-bottom: 0;
+    background: linear-gradient(90deg, var(--secondary-color), var(--accent-color));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.stat-label {
+    font-size: 0.85rem;
+    margin-bottom: 0;
+    color: var(--light-text);
+}
+
+.hero-image {
+    position: relative;
+}
+
+.hero-image img {
+    max-height: 450px;
+    filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.1));
+    animation: float 6s ease-in-out infinite;
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-20px); }
+}
+
+/* Section Styling */
+.section-title {
+    font-weight: 700;
+    margin-bottom: 1rem;
+    position: relative;
+    display: inline-block;
+}
+
+.section-title:after {
+    content: '';
+    display: block;
+    height: 4px;
+    width: 80px;
+    background: linear-gradient(90deg, var(--secondary-color), var(--accent-color));
+    margin: 0.5rem auto 0;
+    border-radius: 2px;
+}
+
+.section-subtitle {
+    color: var(--light-text);
+    font-size: 1.1rem;
+    max-width: 700px;
+    margin: 0 auto;
+}
+
+/* Role Cards */
+.role-card {
+    background: white;
+    border-radius: var(--border-radius);
+    padding: 2rem;
+    height: 100%;
+    text-align: center;
+    box-shadow: var(--box-shadow);
+    transition: var(--transition);
+    position: relative;
+    overflow: hidden;
+    border-top: 5px solid transparent;
+}
+
+.role-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+}
+
+.employee-card {
+    border-top-color: var(--secondary-color);
+}
+
+.technician-card {
+    border-top-color: var(--warning-color);
+}
+
+.admin-card {
+    border-top-color: var(--accent-color);
+}
+
+.role-icon {
+    width: 80px;
+    height: 80px;
+    background: linear-gradient(135deg, rgba(67, 97, 238, 0.1), rgba(67, 97, 238, 0.05));
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+}
+
+.role-icon i {
+    font-size: 2rem;
+    color: var(--secondary-color);
+}
+
+.employee-card .role-icon i {
+    color: var(--secondary-color);
+}
+
+.technician-card .role-icon i {
+    color: var(--warning-color);
+}
+
+.admin-card .role-icon i {
+    color: var(--accent-color);
+}
+
+.role-features {
+    list-style: none;
+    padding: 0;
+    margin: 1.5rem 0;
+    text-align: left;
+}
+
+.role-features li {
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: flex-start;
+}
+
+.role-features li i {
+    color: var(--success-color);
+    margin-right: 0.5rem;
+    margin-top: 0.25rem;
+}
+
+/* Feature Cards */
+.feature-card {
+    background: white;
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    height: 100%;
+    text-align: center;
+    box-shadow: var(--box-shadow);
+    transition: var(--transition);
+    position: relative;
+    overflow: hidden;
+}
+
+.feature-card:hover {
+    transform: translateY(-7px);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
+}
+
+.feature-card:hover .feature-icon {
+    transform: scale(1.1);
+}
+
+.feature-icon {
+    width: 70px;
+    height: 70px;
+    background: linear-gradient(135deg, rgba(67, 97, 238, 0.1), rgba(114, 9, 183, 0.05));
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.25rem;
+    transition: all 0.3s ease;
+}
+
+.feature-icon i {
+    font-size: 1.75rem;
+    background: linear-gradient(135deg, var(--secondary-color), var(--accent-color));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.feature-card h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+}
+
+.feature-card p {
+    color: var(--light-text);
+    font-size: 0.95rem;
+    margin-bottom: 0;
+}
+
+/* CTA Section */
+.cta-section {
+    background: linear-gradient(135deg, rgba(26, 36, 54, 0.03), rgba(67, 97, 238, 0.1));
+}
+
+.cta-card {
+    background: linear-gradient(135deg, var(--secondary-color), var(--accent-color));
+    color: white;
+    border-radius: var(--border-radius);
+    padding: 3rem;
+    box-shadow: 0 10px 30px rgba(67, 97, 238, 0.3);
+}
+
+.cta-card h2 {
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.cta-card p {
+    font-size: 1.1rem;
+    margin-bottom: 0;
+    opacity: 0.9;
+}
+
+.cta-card .btn {
+    padding: 0.75rem 2rem;
+    font-weight: 600;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+}
+
+.cta-card .btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+}
+
+/* Media Queries */
+@media (max-width: 992px) {
+    .hero-section {
+        padding: 4rem 0 0;
+    }
+    
+    .hero-image img {
+        max-height: 350px;
+        margin-top: 2rem;
+    }
+    
+    .cta-card {
+        padding: 2rem;
+    }
+}
+
+@media (max-width: 768px) {
+    h1.display-4 {
+        font-size: 2.5rem;
+    }
+    
+    .stat-card {
+        margin-bottom: 1rem;
+    }
+    
+    .feature-card, .role-card {
+        margin-bottom: 1.5rem;
+    }
+    
+    .cta-card {
+        text-align: center;
+    }
+}
+</style>
+{% endblock %} 
