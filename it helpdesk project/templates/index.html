@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12 text-center mb-5">
+        <h1>Welcome to IT Helpdesk System</h1>
+        <p class="lead">Efficient IT support management for your organization</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-body text-center">
+                <h3>For Employees</h3>
+                <p>Report IT issues, track your complaints, and get support</p>
+                <a href="{{ url_for('login') }}" class="btn btn-primary">Login as Employee</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-body text-center">
+                <h3>For Technicians</h3>
+                <p>Manage assigned complaints and provide support</p>
+                <a href="{{ url_for('login') }}" class="btn btn-primary">Login as Technician</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-body text-center">
+                <h3>For Administrators</h3>
+                <p>Monitor system performance and manage users</p>
+                <a href="{{ url_for('login') }}" class="btn btn-primary">Login as Admin</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-5">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h4>System Features</h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="feature-item text-center">
+                            <i class="fas fa-robot mb-3"></i>
+                            <h5>Smart Chatbot</h5>
+                            <p>24/7 automated support with intelligent troubleshooting</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="feature-item text-center">
+                            <i class="fas fa-ticket-alt mb-3"></i>
+                            <h5>Complaint Management</h5>
+                            <p>Efficient tracking and resolution of IT issues</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="feature-item text-center">
+                            <i class="fas fa-chart-line mb-3"></i>
+                            <h5>Performance Analytics</h5>
+                            <p>Real-time monitoring of support efficiency</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="feature-item text-center">
+                            <i class="fas fa-bell mb-3"></i>
+                            <h5>Smart Notifications</h5>
+                            <p>Instant updates on complaint status</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+<style>
+.feature-item {
+    padding: 20px;
+    border-radius: 8px;
+    transition: transform 0.3s ease;
+}
+
+.feature-item:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.feature-item i {
+    font-size: 2.5rem;
+    color: #007bff;
+}
+
+.card {
+    border: none;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+}
+</style>
+{% endblock %} 
