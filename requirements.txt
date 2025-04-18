@@ -1,6 +1,6 @@
---prefer-binary
 numpy>=1.23.5
 pandas==1.3.3
+--prefer-binary
 openpyxl==3.0.9
 Flask==2.0.1
 Flask-SQLAlchemy==2.5.1
