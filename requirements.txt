@@ -9,7 +9,7 @@ Flask-Mail==0.9.1
 python-dotenv==0.19.0
 google-generativeai==0.3.1
 SQLAlchemy>=2.0.21
-Werkzeug>=3.0.0
+Werkzeug==2.3.7
 python-dateutil>=2.8.2
 email-validator>=2.0.0
 reportlab==3.6.8
