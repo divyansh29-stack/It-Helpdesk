@@ -1,5 +1,5 @@
 --prefer-binary
-numpy==1.23.5
+numpy>=1.23.5
 pandas==1.3.3
 openpyxl==3.0.9
 Flask==2.0.1
